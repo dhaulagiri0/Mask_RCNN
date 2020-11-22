@@ -59,6 +59,7 @@ def makeSegmentations(data_path, subset, save_path):
                 percentage = arteryArea / occ
 
                 # save
+                imageio.imwrite(save_path + f.name.split('.')[0] + 'bin_mask.png', binMask)
                 imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented.png', segmented_v)
                 imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_threshold.png', segmented_thresh)
                 imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_threshold_binary.png', segmented_binary)

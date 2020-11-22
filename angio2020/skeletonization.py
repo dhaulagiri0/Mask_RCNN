@@ -379,7 +379,8 @@ if __name__ == "__main__":
   import cv2
   import random
 
-  im0 = cv2.imread("C://Users/CHEN/Documents/NpzToVideo/keyframes_1/5_34/5_34_lad.png")
+  im0 = cv2.imread("A:/segmented/2477_23_ladbin_mask.png")
+  imSegmented = cv2.imread("A:/segmented/2477_23_ladsegmented_threshold.png")
 
   im = (im0[:,:,0]>128).astype(np.uint8)
 
@@ -398,9 +399,9 @@ if __name__ == "__main__":
   polys = traceSkeleton(im,0,0,im.shape[1],im.shape[0],30,999,rects)
   #print(polys[0][0][0])
   
-  arr = findgradient(polys, im0, 1)
+  arr = findgradient(polys, imSegmented, 1)
 
-  cv2.imshow('',im0);cv2.waitKey(0)
+  cv2.imshow('',imSegmented);cv2.waitKey(0)
 
 
   print(arr)
@@ -408,8 +409,8 @@ if __name__ == "__main__":
   for l in polys:
       c = (200*random.random(),200*random.random(),200*random.random())
       for i in range(0,len(l)-1):
-        cv2.line(im0,(l[i][0],l[i][1]),(l[i+1][0],l[i+1][1]), c)
+        cv2.line(imSegmented,(l[i][0],l[i][1]),(l[i+1][0],l[i+1][1]), c, thickness=5)
         print(l[i])
 
-  cv2.imshow('',im0);cv2.waitKey(0)
+  cv2.imshow('',imSegmented);cv2.waitKey(0)
 
