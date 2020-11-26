@@ -19,6 +19,26 @@ def toBinMask(img=None, path=None, threshold=10):
     #convert bin map to rle
     return binMap
 
+def upContrast(img):
+    lab= cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+
+    #-----Splitting the LAB image to different channels-------------------------
+    l, a, b = cv2.split(lab)
+
+    #-----Applying CLAHE to L-channel-------------------------------------------
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+    cl = clahe.apply(l)
+
+    #-----Merge the CLAHE enhanced L-channel with the a and b channel-----------
+    limg = cv2.merge((cl,a,b))
+
+    #-----Converting image from LAB Color model to RGB model--------------------
+    lab = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
+    final = cv2.cvtColor(lab, cv2.COLOR_RGB2GRAY)
+    return final
+
+    #_____END_____#
+
 def makeSegmentations(data_path, subset, save_path):
     p = Path(data_path)
     # navigates the items found in data folder
@@ -33,10 +53,11 @@ def makeSegmentations(data_path, subset, save_path):
                 # binMask = np.expand_dims(toBinMask(path=str(f)), -1)
                 binMask = toBinMask(path=str(f))
 
-                originalImage = cv2.imread(data_path + '/' + image_id + '.jpeg', 0)
+                originalImage = cv2.imread(data_path + '/png/' + image_id + '.png')
+                originalImage = upContrast(originalImage)
 
                 # isolate masked region
-                segmented = cv2.bitwise_and(originalImage, binMask)
+                segmented = cv2.bitwise_and(originalImage, originalImage, mask=binMask)
                 segmented_v = segmented
 
                 # find sum of pixel value
@@ -49,10 +70,20 @@ def makeSegmentations(data_path, subset, save_path):
                 meanPx = sumPx / occ
 
                 # threshold segmented image by mean pixel value
-                ret, segmented_thresh = cv2.threshold(segmented , meanPx + 10, 0, cv2.THRESH_TOZERO_INV)
+                ret, segmented_thresh = cv2.threshold(segmented , meanPx * 1.2, 0, cv2.THRESH_TOZERO_INV)
+
+                im_floodfill = segmented_thresh.copy()
+                h, w = segmented_thresh.shape[:2]
+                mask = np.zeros((h+2, w+2), np.uint8)
+                cv2.floodFill(im_floodfill, mask, (0,0), 255)
+                im_floodfill_inv = cv2.bitwise_not(im_floodfill)
+                segmented_binary = segmented_thresh | im_floodfill_inv
+
+                # kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2,2))
+                # segmented_thresh = cv2.morphologyEx(segmented_thresh, cv2.MORPH_OPEN, kernel, iterations=1)
 
                 # binary map
-                ret, segmented_binary = cv2.threshold(segmented_thresh, 1, 255, cv2.THRESH_BINARY )
+                # ret, segmented_binary = cv2.threshold(segmented_thresh, 1, 255, cv2.THRESH_BINARY )
 
                 # find area percentage
                 arteryArea = (segmented_binary > 0).sum()
