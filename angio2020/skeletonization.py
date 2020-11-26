@@ -5,6 +5,10 @@
 
 import numpy as np
 import cv2
+from skimage.draw import line
+from matplotlib import pyplot as plt
+from scipy.signal import argrelextrema, find_peaks
+import math
 
 # binary image thinning (skeletonization) in-place.
 # implements Zhang-Suen algorithm.
@@ -303,84 +307,150 @@ def traceSkeleton(im, x, y, w, h, csize, maxIter, rects):
     frags += chunkToFrags(im,x,y,w,h);
   
   return frags
-  
 
-def findgradient(polys, im0, n):
-  
-  arr = []
-  for poly in polys:
-    for i in range(0, len(poly) - n, n):
-
-      coords = poly[i]
-      coordsNN = poly[i + n]
-      c = [200*random.random(),200*random.random(),200*random.random()]
-      if (coords[0] - coordsNN[0] != 0):
-        gradient = (coordsNN[1] - coords[1])/(coords[0] - coordsNN[0])
-      
-      # cv2.line(im0, (x2, y2), (coords[0], coords[1]), (0, 255, 0), thickness=1)
-      
-        curcoord = coords
-
-        upwidth = 0
-        downwidth = 0
-
-        while im0[curcoord[1]][curcoord[0]].any():
-          im0[curcoord[1]][curcoord[0]] = c
-          upwidth += 1
-          
-          x2 = curcoord[1] - 1
-          y2 = int(gradient * x2 - coords[1] * gradient + coords[0])
-
-          curcoord = [y2, x2]
-        
-        curcoord = coords
-
-        while im0[curcoord[1]][curcoord[0]].any():
-          im0[curcoord[1]][curcoord[0]] = c
-          downwidth += 1
-
-          x2 = curcoord[1] + 1
-          y2 = int(gradient * x2 - coords[1] * gradient + coords[0])
-
-          curcoord = [y2, x2]
-      
-      else:
-        curcoord = coords
-
-        upwidth = 0
-        downwidth = 0
-
-        while im0[curcoord[1]][curcoord[0]].any():
-          im0[curcoord[1]][curcoord[0]] = c
-          upwidth += 1
-          
-          x2 = curcoord[1]
-          y2 = curcoord[0] + 1
-
-          curcoord = [y2, x2]
-        
-        curcoord = coords
-
-        while im0[curcoord[1]][curcoord[0]].any():
-          im0[curcoord[1]][curcoord[0]] = c
-          downwidth += 1
-
-          x2 = curcoord[1]
-          y2 = curcoord[0] - 1
-
-          curcoord = [y2, x2]
-
-      arr.append([coords[1], coords[0], gradient, upwidth, downwidth])
+def smooth(x,window_len=11,window='hanning'):
+    """smooth the data using a window with requested size.
     
-  return arr
+    This method is based on the convolution of a scaled window with the signal.
+    The signal is prepared by introducing reflected copies of the signal 
+    (with the window size) in both ends so that transient parts are minimized
+    in the begining and end part of the output signal.
+    
+    input:
+        x: the input signal 
+        window_len: the dimension of the smoothing window; should be an odd integer
+        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
+            flat window will produce a moving average smoothing.
+
+    output:
+        the smoothed signal
+        
+    example:
+
+    t=linspace(-2,2,0.1)
+    x=sin(t)+randn(len(t))*0.1
+    y=smooth(x)
+    
+    see also: 
+    
+    numpy.hanning, numpy.hamming, numpy.bartlett, numpy.blackman, numpy.convolve
+    scipy.signal.lfilter
+ 
+    NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
+    """
+
+    if x.ndim != 1:
+        raise ValueError("smooth only accepts 1 dimension arrays.")
+
+    if x.size < window_len:
+        raise ValueError("Input vector needs to be bigger than window size.")
+
+
+    if window_len<3:
+        return x
+
+
+    if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+        raise ValueError("Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
+
+
+    s=np.r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
+    #print(len(s))
+    if window == 'flat': #moving average
+        w=np.ones(window_len,'d')
+    else:
+        w=eval('np.'+window+'(window_len)')
+
+    y=np.convolve(w/w.sum(),s,mode='same')
+    return y
+
+
+def getNormal(pt1, pt2, pt3):
+  # check if normal is parallel to y-axis
+  grad1 = (pt2[0] - pt1[0]) / (pt2[1] - pt1[1])
+  grad2 = (pt3[0] - pt2[0]) / (pt3[1] - pt2[1])
+  grad = (grad1 + grad2) / 2
+  normalGrad = -1 / grad
+
+  return normalGrad
+
+def widthAnalysis(points, im0, n):
+  widths = []
+  coordsList = []
+  for i in range(n, len(points) - n, n):
+    coords = points[i]
+    coordsNN = points[i + 1]
+    coordsPP = points[i - 1]
+
+    gradient = getNormal(coordsPP, coords, coordsNN)
+
+    # check up and down width 
+    upwidth = 0
+    downwidth = 0
+
+    curcoord = coords
+
+    # check up width
+    while im0[curcoord[1]][curcoord[0]].any():
+      
+      if not math.isnan(gradient) and not math.isinf(gradient):
+        print(gradient)
+        x2 = curcoord[1] + 1
+        y2 = int(gradient * x2 - coords[1] * gradient + coords[0])
+      else:
+        x2 = curcoord[1]
+        y2 = curcoord[0] + 1
+
+      curcoord = [y2, x2]
+    
+    upcoords = curcoord
+    curcoord = coords
+
+    # check down width
+    c = (200*random.random(),200*random.random(),200*random.random())
+    while im0[curcoord[1]][curcoord[0]].any():
+
+      if not math.isnan(gradient) and not math.isinf(gradient):
+        x2 = curcoord[1] - 1
+        y2 = int(gradient * x2 - coords[1] * gradient + coords[0])
+      else:
+        x2 = curcoord[1]
+        y2 = curcoord[0] - 1
+
+      # downwidth += math.sqrt((y2 - curcoord[0])**2 + (x2-curcoord[1])**2)
+      curcoord = [y2, x2]
+
+    downcoords = curcoord
+
+    totalwidth = math.sqrt((upcoords[0] - downcoords[0])**2 + (upcoords[1] - downcoords[1])**2)
+    # cv2.line(im0, (upcoords[0], upcoords[1]), (downcoords[0], downcoords[1]), c, thickness=1)
+
+    widths.append(totalwidth)
+    coordsList.append(points[i])
+
+    # arr.append([coords[1], coords[0], gradient, upwidth, downwidth, totalwidth]) 
+  
+  return widths, coordsList
+
+# get x y coordinates of all points on the skeleton line
+def getAllPoints(polys): 
+  points = []
+  for poly in polys:
+    for i in range(0, len(poly) - 1):
+      start = poly[i]
+      end = poly[i + 1]
+      pts = list(zip(*line(*start, *end)))
+      points += pts
+  return points
+
   
 
 if __name__ == "__main__":
   import cv2
   import random
 
-  im0 = cv2.imread("A:/segmented/2477_23_ladbin_mask.png")
-  imSegmented = cv2.imread("A:/segmented/2477_23_ladsegmented_threshold.png")
+  im0 = cv2.imread("A:/segmented/2477_30_lcx2bin_mask.png")
+  imSegmented = cv2.imread("A:/segmented/2477_30_lcx2segmented_threshold_binary.png")
 
   im = (im0[:,:,0]>128).astype(np.uint8)
 
@@ -390,27 +460,42 @@ if __name__ == "__main__":
   #   print("")
   # print(np.sum(im),im.shape[0]*im.shape[1])
   im = thinning(im);
-  print(im.shape)
 
-  # cv2.imshow('',im*255);cv2.waitKey(0)
 
   rects = []
   
-  polys = traceSkeleton(im,0,0,im.shape[1],im.shape[0],30,999,rects)
-  #print(polys[0][0][0])
+  polys = traceSkeleton(im,0,0,im.shape[1],im.shape[0],10,999,rects)
   
-  arr = findgradient(polys, imSegmented, 1)
+  points = getAllPoints(polys)
+  print(points)
 
+  arr, coordsList = widthAnalysis(points, imSegmented, 1)
+  arr = np.array(arr)
+  arr_s = smooth(arr, 22)
+  average_width = np.average(arr)
+
+  peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.4, None))
+  
+  # plt.plot(range(1, len(arr) + 1), arr)
+  plt.plot(range(1, len(arr_s) + 1), arr_s)
+  plt.plot(peaks, arr_s[peaks], "x")
+  plt.show()
+
+  print(arr, len(arr_s), len(coordsList), len(arr))
+  
+  circleIm = imSegmented
+  for peak in peaks:
+    print(int((peak / len(peaks)) * len(coordsList)))
+    c = (200*random.random(),200*random.random(),200*random.random())
+    cv2.circle(circleIm, coordsList[int((peak / len(arr_s)) * len(coordsList))], 2, c, 2)
+
+  # cv2.imshow('',circleIm);cv2.waitKey(0)
   cv2.imshow('',imSegmented);cv2.waitKey(0)
-
-
-  print(arr)
 
   for l in polys:
       c = (200*random.random(),200*random.random(),200*random.random())
       for i in range(0,len(l)-1):
-        cv2.line(imSegmented,(l[i][0],l[i][1]),(l[i+1][0],l[i+1][1]), c, thickness=5)
-        print(l[i])
+        cv2.line(imSegmented,(l[i][0],l[i][1]),(l[i+1][0],l[i+1][1]), c, thickness=2)
 
   cv2.imshow('',imSegmented);cv2.waitKey(0)
 
