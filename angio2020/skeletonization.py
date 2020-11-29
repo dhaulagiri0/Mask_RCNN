@@ -449,8 +449,8 @@ if __name__ == "__main__":
   import cv2
   import random
 
-  im0 = cv2.imread("A:/segmented/2477_30_lcx2bin_mask.png")
-  imSegmented = cv2.imread("A:/segmented/2477_30_lcx2segmented_threshold_binary.png")
+  im0 = cv2.imread("A:/segmented/2477_25_ladbin_mask.png")
+  imSegmented = cv2.imread("A:/segmented/2477_25_ladsegmented_threshold_binary.png")
 
   im = (im0[:,:,0]>128).astype(np.uint8)
 
@@ -474,7 +474,7 @@ if __name__ == "__main__":
   arr_s = smooth(arr, 22)
   average_width = np.average(arr)
 
-  peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.4, None))
+  peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
   
   # plt.plot(range(1, len(arr) + 1), arr)
   plt.plot(range(1, len(arr_s) + 1), arr_s)

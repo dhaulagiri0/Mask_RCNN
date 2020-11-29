@@ -26,7 +26,7 @@ def upContrast(img):
     l, a, b = cv2.split(lab)
 
     #-----Applying CLAHE to L-channel-------------------------------------------
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+    clahe = cv2.createCLAHE(clipLimit=12.0, tileGridSize=(5,5))
     cl = clahe.apply(l)
 
     #-----Merge the CLAHE enhanced L-channel with the a and b channel-----------
@@ -34,10 +34,45 @@ def upContrast(img):
 
     #-----Converting image from LAB Color model to RGB model--------------------
     lab = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
-    final = cv2.cvtColor(lab, cv2.COLOR_RGB2GRAY)
-    return final
+    return lab
 
     #_____END_____#
+
+def otsu(image, is_normalized=True, is_reduce_noise=False):
+
+    # Apply GaussianBlur to reduce image noise if it is required
+    if is_reduce_noise:
+        image = cv2.GaussianBlur(image, (5, 5), 0)
+
+    # Set total number of bins in the histogram
+    bins_num = 256
+
+    # Get the image histogram
+    hist, bin_edges = np.histogram(image, bins=bins_num)
+
+    # Get normalized histogram if it is required
+    if is_normalized:
+        hist = np.divide(hist.ravel(), hist.max())
+
+    # Calculate centers of bins
+    bin_mids = (bin_edges[:-1] + bin_edges[1:]) / 2.
+
+    # Iterate over all thresholds (indices) and get the probabilities w1(t), w2(t)
+    weight1 = np.cumsum(hist)
+    weight2 = np.cumsum(hist[::-1])[::-1]
+
+    # Get the class means mu0(t)
+    mean1 = np.cumsum(hist * bin_mids) / weight1
+    # Get the class means mu1(t)
+    mean2 = (np.cumsum((hist * bin_mids)[::-1]) / weight2[::-1])[::-1]
+
+    inter_class_variance = weight1[:-1] * weight2[1:] * (mean1[:-1] - mean2[1:]) ** 2
+
+    # Maximize the inter_class_variance function val
+    index_of_max_val = np.argmax(inter_class_variance)
+
+    threshold = bin_mids[:-1][index_of_max_val]
+    return threshold
 
 def makeSegmentations(data_path, subset, save_path):
     p = Path(data_path)
@@ -55,6 +90,7 @@ def makeSegmentations(data_path, subset, save_path):
 
                 originalImage = cv2.imread(data_path + '/png/' + image_id + '.png')
                 originalImage = upContrast(originalImage)
+                originalImage = cv2.cvtColor(originalImage, cv2.COLOR_RGB2GRAY)
 
                 # isolate masked region
                 segmented = cv2.bitwise_and(originalImage, originalImage, mask=binMask)
@@ -69,8 +105,15 @@ def makeSegmentations(data_path, subset, save_path):
                 # mean pixel value
                 meanPx = sumPx / occ
 
-                # threshold segmented image by mean pixel value
-                ret, segmented_thresh = cv2.threshold(segmented , meanPx * 1.2, 0, cv2.THRESH_TOZERO_INV)
+                # # Otsu Thresholding
+                # ret3, otsu = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+                otsu_thresh = otsu(segmented)
+
+                # threshold segmented image by otsu value
+                ret, segmented_thresh = cv2.threshold(segmented , otsu_thresh*1.2, 0, cv2.THRESH_TOZERO_INV)
+
+                # threshold segmented image by mean
+                # ret, segmented_thresh = cv2.threshold(segmented , meanPx*1.2, 0, cv2.THRESH_TOZERO_INV)
 
                 im_floodfill = segmented_thresh.copy()
                 h, w = segmented_thresh.shape[:2]
@@ -79,21 +122,20 @@ def makeSegmentations(data_path, subset, save_path):
                 im_floodfill_inv = cv2.bitwise_not(im_floodfill)
                 segmented_binary = segmented_thresh | im_floodfill_inv
 
-                # kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2,2))
-                # segmented_thresh = cv2.morphologyEx(segmented_thresh, cv2.MORPH_OPEN, kernel, iterations=1)
-
-                # binary map
+                # # binary map
                 # ret, segmented_binary = cv2.threshold(segmented_thresh, 1, 255, cv2.THRESH_BINARY )
 
-                # find area percentage
-                arteryArea = (segmented_binary > 0).sum()
-                percentage = arteryArea / occ
+                # morphology opening and closing
+                kernel = np.ones((2,2),np.uint8)
+                segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=1)
+                segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel)
 
                 # save
                 imageio.imwrite(save_path + f.name.split('.')[0] + 'bin_mask.png', binMask)
                 imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented.png', segmented_v)
-                imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_threshold.png', segmented_thresh)
+                # imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_blur.png',blur)
                 imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_threshold_binary.png', segmented_binary)
-                print(f.name.split('.')[0] + ' area percentage: ' + str(percentage))
+                imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_threshold.png', segmented_thresh)
+                # print(f.name.split('.')[0] + ' area percentage: ' + str(percentage))
 
 makeSegmentations('A:/val', 'val', 'A:/segmented/')
