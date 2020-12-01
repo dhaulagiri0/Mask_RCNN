@@ -366,7 +366,6 @@ def smooth(x,window_len=11,window='hanning'):
 
 
 def getNormal(pt1, pt2, pt3):
-  # check if normal is parallel to y-axis
   grad1 = (pt2[0] - pt1[0]) / (pt2[1] - pt1[1])
   grad2 = (pt3[0] - pt2[0]) / (pt3[1] - pt2[1])
   grad = (grad1 + grad2) / 2
@@ -394,7 +393,7 @@ def widthAnalysis(points, im0, n):
     while im0[curcoord[1]][curcoord[0]].any():
       
       if not math.isnan(gradient) and not math.isinf(gradient):
-        print(gradient)
+        # print(gradient)
         x2 = curcoord[1] + 1
         y2 = int(gradient * x2 - coords[1] * gradient + coords[0])
       else:
@@ -426,7 +425,7 @@ def widthAnalysis(points, im0, n):
     # cv2.line(im0, (upcoords[0], upcoords[1]), (downcoords[0], downcoords[1]), c, thickness=1)
 
     widths.append(totalwidth)
-    coordsList.append(points[i])
+    coordsList.append((points[i][0], points[i][1]))
 
     # arr.append([coords[1], coords[0], gradient, upwidth, downwidth, totalwidth]) 
   
@@ -446,24 +445,24 @@ def getAllPoints(polys):
 def determineStenosisLocation(peak_position, artery_type, artery_length):
   if artery_type == 'lad':
     if peak_position / artery_length > .66:
-      # proximal
-      return 0
+      # distal
+      return 2
     elif peak_position / artery_length > .33:
       # mid
       return 1
     else: 
-      # distal
-      return 2
-  else:
-    if peak_position / artery_length > .55:
       # proximal
       return 0
-    else:
+  else:
+    if peak_position / artery_length > .55:
       # distal
       return 1
+    else:
+      # distal
+      return 0
 
 def scoring(widths, average_width, peaks, artery_type):
-  # widths array records widths from distal to proximal
+  # widths array records widths from proximal to distal
   # factors are arranged from proximal to distal
   # lcx1 is interpreted as the marginal artery
   # assume right dominant for all cases
@@ -499,35 +498,82 @@ def scoring(widths, average_width, peaks, artery_type):
     
   return score
 
-  
+def skeletoniseSkimg(maskFilePath):
+  from skimage.morphology import skeletonize
+  from skimage import data
+  import matplotlib.pyplot as plt
+  from skimage.util import invert
+  from skimage import data
+  from skimage.color import rgb2gray
+  from skimage import io, img_as_uint
+  from skimage.filters import threshold_otsu
+  from skan import Skeleton, summarize, skeleton_to_csgraph
+  import pandas as pd
+
+  # Invert the horse image
+
+
+  image = io.imread(maskFilePath)
+
+  image = rgb2gray(image)
+
+  thresh = threshold_otsu(image)
+  binary = image > thresh
+
+  # perform skeletonization
+  skeleton = skeletonize(binary)
+  io.imsave(f'A:/segmented/01.png', img_as_uint(skeleton))
+
+  # c0 contains information of all points on the skeleton
+  g0, c0, _ = skeleton_to_csgraph(skeleton, spacing=1)
+  all_pts = c0[1:]
+  return all_pts.astype(int)
+
+def locateAllPoints(destpt, skeleton):
+  pts = []
+  pts.append[destpt]
+
+  element = skeleton[destpt[1]][destpt[0]]
+  nextPoint = True
+  while nextPoint:
+    for n in range(destpt[1] - 1, destpt[1] + 1):
+      if n < 0 or n > skeleton.shape[0]: continue
+      for m in range(destpt[0] - 1, destpt[0] + 1):
+        if m < 0 or m > skeleton.shape[1]: continue
+        if (m, n) not in pts and skeleton[n, m]:
+          pts.append((m, n))
+
+  return pts
 
 if __name__ == "__main__":
   import cv2
   import random
 
   filename = '2477_25_lad'
-
+  all_pts = skeletoniseSkimg(f'A:/segmented/{filename}bin_mask.png')
+  all_pts = np.flip(all_pts, 1)
+  # all_pts = locateAllPoints(destpt, skeleton)
   im0 = cv2.imread(f'A:/segmented/{filename}bin_mask.png')
   imSegmented = cv2.imread(f'A:/segmented/{filename}segmented_threshold_binary.png')
 
   im = (im0[:,:,0]>128).astype(np.uint8)
 
-  # for i in range(im.shape[0]):
-  #   for j in range(im.shape[1]):
-  #     print(im[i,j],end="")
-  #   print("")
-  # print(np.sum(im),im.shape[0]*im.shape[1])
-  im = thinning(im);
+  # # for i in range(im.shape[0]):
+  # #   for j in range(im.shape[1]):
+  # #     print(im[i,j],end="")
+  # #   print("")
+  # # print(np.sum(im),im.shape[0]*im.shape[1])
+  # im = thinning(im);
 
 
-  rects = []
+  # rects = []
   
-  polys = traceSkeleton(im,0,0,im.shape[1],im.shape[0],10,999,rects)
+  # polys = traceSkeleton(im,0,0,im.shape[1],im.shape[0],10,999,rects)
   
-  points = getAllPoints(polys)
-  print(points)
+  # points = getAllPoints(polys)
+  # print(points)
 
-  arr, coordsList = widthAnalysis(points, imSegmented, 1)
+  arr, coordsList = widthAnalysis(all_pts, imSegmented, 1)
   arr = np.array(arr)
   arr_s = smooth(arr, 22)
   average_width = np.average(arr) 
@@ -538,25 +584,23 @@ if __name__ == "__main__":
   plt.plot(range(1, len(arr_s) + 1), arr_s)
   plt.plot(peaks, arr_s[peaks], "x")
   plt.show()
-
-  print(arr, len(arr_s), len(coordsList), len(arr))
   
   circleIm = imSegmented
   for peak in peaks:
-    print(int((peak / len(peaks)) * len(coordsList)))
+    # print(int((peak / len(peaks)) * len(coordsList)))
     c = (200*random.random(),200*random.random(),200*random.random())
     cv2.circle(circleIm, coordsList[int((peak / len(arr_s)) * len(coordsList))], 2, c, 2)
 
   # cv2.imshow('',circleIm);cv2.waitKey(0)
   cv2.imshow('',imSegmented);cv2.waitKey(0)
 
-  for l in polys:
-      c = (200*random.random(),200*random.random(),200*random.random())
-      for i in range(0,len(l)-1):
-        cv2.line(imSegmented,(l[i][0],l[i][1]),(l[i+1][0],l[i+1][1]), c, thickness=2)
+  # for l in polys:
+  #     c = (200*random.random(),200*random.random(),200*random.random())
+  #     for i in range(0,len(l)-1):
+  #       cv2.line(imSegmented,(l[i][0],l[i][1]),(l[i+1][0],l[i+1][1]), c, thickness=2)
 
-  cv2.imshow('',imSegmented);cv2.waitKey(0)
+  # cv2.imshow('',imSegmented);cv2.waitKey(0)
 
   score = scoring(arr_s, average_width, peaks, filename.split('_')[-1])
-  print(score)
+  print(f'Computed Syntax score for this artery: {score}')
 
