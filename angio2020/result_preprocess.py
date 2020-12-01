@@ -22,21 +22,19 @@ def toBinMask(img=None, path=None, threshold=10):
 def upContrast(img):
     lab= cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
 
-    #-----Splitting the LAB image to different channels-------------------------
+    # Splitting the LAB image to different channels
     l, a, b = cv2.split(lab)
 
-    #-----Applying CLAHE to L-channel-------------------------------------------
+    # Applying CLAHE to L-channel
     clahe = cv2.createCLAHE(clipLimit=12.0, tileGridSize=(5,5))
     cl = clahe.apply(l)
 
-    #-----Merge the CLAHE enhanced L-channel with the a and b channel-----------
+    # Merge the CLAHE enhanced L-channel with the a and b channel
     limg = cv2.merge((cl,a,b))
 
-    #-----Converting image from LAB Color model to RGB model--------------------
+    # Converting image from LAB Color model to RGB model
     lab = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
     return lab
-
-    #_____END_____#
 
 def otsu(image, is_normalized=True, is_reduce_noise=False):
 

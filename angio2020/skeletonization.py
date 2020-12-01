@@ -443,14 +443,72 @@ def getAllPoints(polys):
       points += pts
   return points
 
+def determineStenosisLocation(peak_position, artery_type, artery_length):
+  if artery_type == 'lad':
+    if peak_position / artery_length > .66:
+      # proximal
+      return 0
+    elif peak_position / artery_length > .33:
+      # mid
+      return 1
+    else: 
+      # distal
+      return 2
+  else:
+    if peak_position / artery_length > .55:
+      # proximal
+      return 0
+    else:
+      # distal
+      return 1
+
+def scoring(widths, average_width, peaks, artery_type):
+  # widths array records widths from distal to proximal
+  # factors are arranged from proximal to distal
+  # lcx1 is interpreted as the marginal artery
+  # assume right dominant for all cases
+  # TODO account for dominance as a user input
+  # TODO account for stenosis length
+  factors_list = {
+    'lad' : [3.5, 2.5, 1],
+    'diagonal' : [1],
+    'lcx1' : [1],
+    'lcx2' : [1.5, 1]
+  }
+  factors = factors_list[artery_type]
+
+  artery_length = len(widths)
+
+  score = 1
+  # average_width is the average width of the artery taken before smoothing
+  average_width_smoothed = np.average(widths)
+  for peak in peaks:
+    width = widths[peak]
+    # get Leaman factor for position
+    if artery_type == 'lad' or artery_type == 'lcx2':
+      factor = factors[determineStenosisLocation(peak, artery_type, artery_length)]
+    else:
+      factor = factors[0]
+    
+    if width == 0:
+      # occlusion
+      score = score * factor * 5
+    elif width < 0.5 * average_width:
+      # significant lesion
+      score = score * factor * 2
+    
+  return score
+
   
 
 if __name__ == "__main__":
   import cv2
   import random
 
-  im0 = cv2.imread("A:/segmented/2477_25_ladbin_mask.png")
-  imSegmented = cv2.imread("A:/segmented/2477_25_ladsegmented_threshold_binary.png")
+  filename = '2477_25_lad'
+
+  im0 = cv2.imread(f'A:/segmented/{filename}bin_mask.png')
+  imSegmented = cv2.imread(f'A:/segmented/{filename}segmented_threshold_binary.png')
 
   im = (im0[:,:,0]>128).astype(np.uint8)
 
@@ -472,7 +530,7 @@ if __name__ == "__main__":
   arr, coordsList = widthAnalysis(points, imSegmented, 1)
   arr = np.array(arr)
   arr_s = smooth(arr, 22)
-  average_width = np.average(arr)
+  average_width = np.average(arr) 
 
   peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
   
@@ -498,4 +556,7 @@ if __name__ == "__main__":
         cv2.line(imSegmented,(l[i][0],l[i][1]),(l[i+1][0],l[i+1][1]), c, thickness=2)
 
   cv2.imshow('',imSegmented);cv2.waitKey(0)
+
+  score = scoring(arr_s, average_width, peaks, filename.split('_')[-1])
+  print(score)
 
