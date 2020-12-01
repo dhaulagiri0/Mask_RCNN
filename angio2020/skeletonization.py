@@ -492,10 +492,10 @@ def scoring(widths, average_width, peaks, artery_type):
     
     if width == 0:
       # occlusion
-      score = score * factor * 5
+      score += factor * 5
     elif width < 0.5 * average_width:
       # significant lesion
-      score = score * factor * 2
+      score += factor * 2
     
   return score
 
