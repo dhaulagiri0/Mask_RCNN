@@ -522,7 +522,6 @@ def skeletoniseSkimg(maskFilePath):
 
   # perform skeletonization
   skeleton = skeletonize(binary)
-  io.imsave(f'A:/segmented/01.png', img_as_uint(skeleton))
 
   # c0 contains information of all points on the skeleton
   g0, c0, _ = skeleton_to_csgraph(skeleton, spacing=1)
