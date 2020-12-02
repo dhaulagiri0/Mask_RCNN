@@ -7,6 +7,7 @@ from pathlib import Path
 import json
 import imageio
 from PIL import Image
+import os
 
 def toBinMask(img=None, path=None, threshold=10):
     if path:
@@ -85,6 +86,9 @@ def makeSegmentations(data_path, subset, save_path):
                 # get binary mask
                 # binMask = np.expand_dims(toBinMask(path=str(f)), -1)
                 binMask = toBinMask(path=str(f))
+                if not os.path.exists(data_path + '/png/' + image_id + '.png'):
+                    originalImage = cv2.imread(data_path + '/' + image_id + '.jpeg')
+                    cv2.imwrite(data_path + '/png/' + image_id + '.png', originalImage)
 
                 originalImage = cv2.imread(data_path + '/png/' + image_id + '.png')
                 originalImage = upContrast(originalImage)
@@ -105,10 +109,12 @@ def makeSegmentations(data_path, subset, save_path):
 
                 # # Otsu Thresholding
                 # ret3, otsu = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-                otsu_thresh = otsu(segmented)
+                nonzero = np.array(segmented[segmented > 0])
+                # segmented[segmented == 0] = -1
+                otsu_thresh = otsu(nonzero)
 
                 # threshold segmented image by otsu value
-                ret, segmented_thresh = cv2.threshold(segmented , otsu_thresh*1.2, 0, cv2.THRESH_TOZERO_INV)
+                ret, segmented_thresh = cv2.threshold(segmented , otsu_thresh, 0, cv2.THRESH_TOZERO_INV)
 
                 # threshold segmented image by mean
                 # ret, segmented_thresh = cv2.threshold(segmented , meanPx*1.2, 0, cv2.THRESH_TOZERO_INV)
@@ -124,9 +130,10 @@ def makeSegmentations(data_path, subset, save_path):
                 # ret, segmented_binary = cv2.threshold(segmented_thresh, 1, 255, cv2.THRESH_BINARY )
 
                 # morphology opening and closing
+                segmented_binary = cv2.resize(segmented_binary, (segmented_binary.shape[0]*2, segmented_binary.shape[1]*2), interpolation=cv2.INTER_AREA)
                 kernel = np.ones((2,2),np.uint8)
-                segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=1)
-                segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel)
+                segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=4)
+                segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
 
                 # save
                 imageio.imwrite(save_path + f.name.split('.')[0] + 'bin_mask.png', binMask)
@@ -136,4 +143,4 @@ def makeSegmentations(data_path, subset, save_path):
                 imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_threshold.png', segmented_thresh)
                 # print(f.name.split('.')[0] + ' area percentage: ' + str(percentage))
 
-makeSegmentations('A:/val', 'val', 'A:/segmented/')
+makeSegmentations('A:/train', 'train', 'A:/segmented_k(2,2)_it(4,4)/')
