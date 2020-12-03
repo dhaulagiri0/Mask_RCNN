@@ -87,6 +87,7 @@ def makeSegmentations(data_path, subset, save_path):
                 # binMask = np.expand_dims(toBinMask(path=str(f)), -1)
                 binMask = toBinMask(path=str(f))
                 if not os.path.exists(data_path + '/png/' + image_id + '.png'):
+                    if not os.path.exists(data_path + '/png'): os.mkdir(data_path + '/png')
                     originalImage = cv2.imread(data_path + '/' + image_id + '.jpeg')
                     cv2.imwrite(data_path + '/png/' + image_id + '.png', originalImage)
 
@@ -134,6 +135,7 @@ def makeSegmentations(data_path, subset, save_path):
                 kernel = np.ones((2,2),np.uint8)
                 segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=4)
                 segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
+                segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
 
                 # save
                 imageio.imwrite(save_path + f.name.split('.')[0] + 'bin_mask.png', binMask)
@@ -143,4 +145,4 @@ def makeSegmentations(data_path, subset, save_path):
                 imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_threshold.png', segmented_thresh)
                 # print(f.name.split('.')[0] + ' area percentage: ' + str(percentage))
 
-makeSegmentations('A:/train', 'train', 'A:/segmented_k(2,2)_it(4,4)/')
+makeSegmentations('A:/test', 'test', 'A:/segmented/')
