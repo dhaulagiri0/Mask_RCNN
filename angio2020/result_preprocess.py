@@ -150,4 +150,4 @@ def makeSegmentations(data_path, subset, save_path):
                 imageio.imwrite(filePrefix + 'segmented_threshold.png', segmented_thresh)
                 # print(f.name.split('.')[0] + ' area percentage: ' + str(percentage))
 
-makeSegmentations('A:/test', 'test', 'A:/segmented/')
+makeSegmentations('B:/test', 'test', 'B:/segmented/')
