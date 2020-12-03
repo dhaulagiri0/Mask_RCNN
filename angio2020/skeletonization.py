@@ -400,10 +400,11 @@ def widthAnalysis(points, im0, n):
     downwidth = 0
 
     curcoord = coords
+    cnt = 0
 
     # check up width
-    while im0[curcoord[1]][curcoord[0]].any():
-      
+    while im0[curcoord[1]][curcoord[0]].any() or cnt <= 3:
+      cnt += 1
       if not math.isnan(gradient) and not math.isinf(gradient):
         # print(gradient)
         x2 = curcoord[1] + 1
@@ -417,10 +418,12 @@ def widthAnalysis(points, im0, n):
     upcoords = curcoord
     curcoord = coords
 
+    cnt = 0
+
     # check down width
     c = (200*random.random(),200*random.random(),200*random.random())
-    while im0[curcoord[1]][curcoord[0]].any():
-
+    while im0[curcoord[1]][curcoord[0]].any() or cnt <= 3:
+      cnt += 1
       if not math.isnan(gradient) and not math.isinf(gradient):
         x2 = curcoord[1] - 1
         y2 = int(gradient * x2 - coords[1] * gradient + coords[0])
@@ -581,6 +584,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   arr = np.array(arr)
   arr_s = smooth(arr, 22)
   average_width = np.average(arr) 
+  print(average_width)
 
   peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
 
@@ -602,7 +606,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   score, percentages = scoring(arr_s, average_width, peaks, filename.split('_')[-1])
   return score, percentages
 
-score, percentages = getScore('1367_35_diagonal', show=True)
+score, percentages = getScore('1367_35_lcx1', show=True)
 print(score)
 print(percentages)
 
