@@ -377,7 +377,6 @@ def smooth(x,window_len=11,window='hanning'):
     y=np.convolve(w/w.sum(),s,mode='same')
     return y
 
-
 def getNormal(pt1, pt2, pt3):
   grad1 = (pt2[0] - pt1[0]) / (pt2[1] - pt1[1])
   grad2 = (pt3[0] - pt2[0]) / (pt3[1] - pt2[1])
