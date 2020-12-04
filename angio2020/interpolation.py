@@ -20,13 +20,19 @@ from decimal import Decimal
 # # cv2.imshow('',Z2);cv2.waitKey(0)
 
 def getPtsAlongLine(srcPt, dstPt, gradient, increment=0.1):
-    y1, x1 = srcPt
-    y2, x2 = dstPt
-    xcoords = np.arange(x1, x2 + increment, 0.1)
-    ycoords = []
-    for x in xcoords:
-        y = gradient*(x - x1) + y1
-        ycoords.append(round(y, 1))
+    x1, y1 = srcPt
+    x2, y2 = dstPt
+    if x2 - x1 != 0:
+        gradient = (y2 - y1) / (x2 - x1)
+        xcoords = np.arange(min(x1, x2), max(x1, x2) + increment, increment)
+        ycoords = []
+        for x in xcoords:
+            y = gradient*(x - x1) + y1
+            ycoords.append(y)
+    else: 
+        ycoords = np.arange(min(y1, y2), max(y1, y2) + increment, increment)
+        xcoords = [x1] * len(ycoords)
+
     return np.asarray(xcoords), np.asarray(ycoords)
 
 
@@ -37,13 +43,14 @@ def getInterpolatedPtsVal(x, y, img):
     xcoords = np.arange(xmax)
     ycoords = np.arange(ymax)
     sp = RectBivariateSpline(xcoords, ycoords, img)
-    return sp(y, x, grid=False)
+    return sp(x, y, grid=False)
 
-img = cv2.imread('A:/segmented/1367/1367_35/1367_35_diagonalbin_mask.png', 0)
-x, y = getPtsAlongLine((195, 272), (185, 282), -1)
-pxVal = getInterpolatedPtsVal(x, y, img)
-
-# sp = getInterpolatedImg(img)
-# pxVal = getPtsAlongLine((195, 272), (185, 282), -1, sp)
-print(pxVal)
-print((pxVal > 0.1).sum())
+# img = cv2.imread('A:/segmented/1367/1367_35/1367_35_lcx1segmented_threshold_binary.png', 0)
+# x, y = getPtsAlongLine((248, 118), (256, 109))
+# pxVal = getInterpolatedPtsVal(y, x, img)
+# print(np.amax(img))
+# # # sp = getInterpolatedImg(img)
+# # # pxVal = getPtsAlongLine((195, 272), (185, 282), -1, sp)
+# print(x, y)
+# print(pxVal)
+# print((pxVal > 127.5).sum())
