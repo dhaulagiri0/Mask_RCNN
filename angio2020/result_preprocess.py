@@ -137,7 +137,7 @@ def makeSegmentations(data_path, subset, save_path):
                 segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
                 segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
 
-                filePrefix = f"{save_path}{image_id.split('_')[0]}/{image_id}/{f.name.split('.')[0]}bin_mask.png"
+                filePrefix = f"{save_path}{image_id.split('_')[0]}/{image_id}/{f.name.split('.')[0]}"
                 if not os.path.exists(f"{save_path}{image_id.split('_')[0]}"):
                     os.mkdir(f"{save_path}{image_id.split('_')[0]}")
                 if not os.path.exists(f"{save_path}{image_id.split('_')[0]}/{image_id}"):

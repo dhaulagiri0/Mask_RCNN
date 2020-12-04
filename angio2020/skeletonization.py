@@ -7,7 +7,7 @@ import numpy as np
 import cv2
 from skimage.draw import line
 from matplotlib import pyplot as plt
-from scipy.signal import argrelextrema, find_peaks
+from scipy.signal import argrelextrema, find_peaks, peak_widths
 import math
 from skimage.morphology import skeletonize
 from skimage import data
@@ -574,7 +574,7 @@ def locateAllPoints(destpt, skeleton):
 
 def getScore(filename, folderDirectory='A:/segmented/', show=False):
 
-  pathPrefix = f"{folderDirectory}/{filename.split('_')[0]}"
+  pathPrefix = f"{folderDirectory}/{filename.split('_')[0]}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}"
 
   # default should be A:/segmented/
   all_pts = skeletoniseSkimg(f"{pathPrefix}/{filename}bin_mask.png")
@@ -592,7 +592,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   print(average_width)
 
   peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
-  stenosis_lengths = peak_widths(arr_s, peaks, rel_height=0.5)
+  stenosis_lengths = peak_widths(np.negative(arr_s), peaks, rel_height=0.5)
 
   if show:
     # plt.plot(range(1, len(arr) + 1), arr)
@@ -600,6 +600,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
     plt.plot(peaks, arr_s[peaks], "x")
     plt.hlines(*stenosis_lengths[1:], color="C2")
     plt.show()
+    print(stenosis_lengths)
 
     circleIm = imSegmented
     for peak in peaks:
@@ -613,7 +614,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   score, percentages = scoring(arr_s, average_width, peaks, filename.split('_')[-1])
   return score, percentages
 
-score, percentages = getScore('1367_35_lcx1', show=True)
+score, percentages = getScore('1367_35_lcx1', folderDirectory='B:/segmented/', show=True)
 print(score)
 print(percentages)
 
