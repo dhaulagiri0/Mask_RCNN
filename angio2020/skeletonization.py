@@ -491,9 +491,7 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
   }
 
   scale = 6. / 12.5
-  print(stenosis_lengths)
   stenosis_lengths = stenosis_lengths * scale
-  print(stenosis_lengths)
 
   segments_list = {
     'lad' : ['proximal', 'mid', 'distal'],
@@ -541,7 +539,7 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
       # significant lesion
       score += factor * 2
     
-    if float(scale) > 20:
+    if stenosis_length > 20:
       score += 1
     
   return score, stenosis_segments
@@ -608,7 +606,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
     # plt.plot(range(1, len(arr) + 1), arr)
     plt.plot(range(1, len(arr_s) + 1), arr_s)
     plt.plot(peaks, arr_s[peaks], "x")
-    plt.hlines(*stenosis_lengths[1:], color="C2")
+    # plt.hlines(*stenosis_lengths[1:], color="C2")
     plt.show()
     print(stenosis_lengths)
 
@@ -624,7 +622,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   score, percentages = scoring(arr_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths)
   return score, percentages
 
-score, percentages = getScore('1367_35_lcx1', folderDirectory='A:/segmented/', show=False)
+score, percentages = getScore('1367_35_lcx1', folderDirectory='B:/segmented/', show=True)
 print(score)
 print(percentages)
 
