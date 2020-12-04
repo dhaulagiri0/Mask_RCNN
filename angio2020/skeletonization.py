@@ -21,6 +21,7 @@ from skan import Skeleton, summarize, skeleton_to_csgraph
 import pandas as pd
 import cv2
 import random
+import os
 
 # binary image thinning (skeletonization) in-place.
 # implements Zhang-Suen algorithm.
@@ -403,7 +404,7 @@ def widthAnalysis(points, im0, n):
     cnt = 0
 
     # check up width
-    while im0[curcoord[1]][curcoord[0]].any() or cnt <= 3:
+    while 0 <= curcoord[1] < im0.shape[1] and 0 <= curcoord[0] < im0.shape[0] and (im0[curcoord[1]][curcoord[0]].any() or cnt <= 3):
       cnt += 1
       if not math.isnan(gradient) and not math.isinf(gradient):
         # print(gradient)
@@ -422,7 +423,7 @@ def widthAnalysis(points, im0, n):
 
     # check down width
     c = (200*random.random(),200*random.random(),200*random.random())
-    while im0[curcoord[1]][curcoord[0]].any() or cnt <= 3:
+    while 0 <= curcoord[1] < im0.shape[1] and 0 <= curcoord[0] < im0.shape[0] and (im0[curcoord[1]][curcoord[0]].any() or cnt <= 3):
       cnt += 1
       if not math.isnan(gradient) and not math.isinf(gradient):
         x2 = curcoord[1] - 1
@@ -581,7 +582,7 @@ def locateAllPoints(destpt, skeleton):
 def getScore(filename, folderDirectory='A:/segmented/', show=False):
 
   pathPrefix = f"{folderDirectory}/{filename.split('_')[0]}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}"
-
+  
   # default should be A:/segmented/
   all_pts = skeletoniseSkimg(f"{pathPrefix}/{filename}bin_mask.png")
   all_pts = np.flip(all_pts, 1)
@@ -595,7 +596,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   arr = np.array(arr)
   arr_s = smooth(arr, 22)
   average_width = np.average(arr) 
-  print(average_width)
+  # print(average_width)
 
   peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
   # determine length of each detected stenosis
@@ -622,9 +623,9 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   score, percentages = scoring(arr_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths)
   return score, percentages
 
-score, percentages = getScore('1367_35_lcx1', folderDirectory='B:/segmented/', show=True)
-print(score)
-print(percentages)
+# score, percentages = getScore('1367_35_lcx1', folderDirectory='B:/segmented/', show=True)
+# print(score)
+# print(percentages)
 
 # legacy code
 # if __name__ == "__main__":
