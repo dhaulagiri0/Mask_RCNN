@@ -491,6 +491,9 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
   }
 
   scale = 6. / 12.5
+  print(stenosis_lengths)
+  stenosis_lengths = stenosis_lengths * scale
+  print(stenosis_lengths)
 
   segments_list = {
     'lad' : ['proximal', 'mid', 'distal'],
@@ -538,7 +541,7 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
       # significant lesion
       score += factor * 2
     
-    if float(stenosis_lengths * scale) > 20:
+    if float(scale) > 20:
       score += 1
     
   return score, stenosis_segments
