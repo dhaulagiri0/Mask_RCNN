@@ -50,7 +50,15 @@ for video in path.iterdir():
                     if segmentName in valid_segments:
                         stenosisPercentages[segmentName].append(score)
 
-    def average(stenosisPercentages):
+    sum = 0
+    for k in stenosisPercentages.values():
+        if k 
+    for val in stenosisPercentages['lad_p']:
+        sum += val
 
-    print(stenosisPercentages)
+    ave = sum / len(stenosisPercentages)
+
+    print(ave)
+
+
 
