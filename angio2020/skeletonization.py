@@ -22,6 +22,8 @@ import pandas as pd
 import cv2
 import random
 import os
+from interpolation import *
+from math import sqrt
 
 # binary image thinning (skeletonization) in-place.
 # implements Zhang-Suen algorithm.
@@ -378,66 +380,99 @@ def smooth(x,window_len=11,window='hanning'):
     return y
 
 def getNormal(pt1, pt2, pt3):
-  grad1 = (pt2[0] - pt1[0]) / (pt2[1] - pt1[1])
-  grad2 = (pt3[0] - pt2[0]) / (pt3[1] - pt2[1])
+  if pt2[1] - pt1[1] != 0: 
+    grad1 = (pt2[0] - pt1[0]) / (pt2[1] - pt1[1])
+  else: return 0
+
+  if pt3[1] - pt2[1] != 0: 
+    grad2 = (pt3[0] - pt2[0]) / (pt3[1] - pt2[1])
+  else: return 0
+
   grad = (grad1 + grad2) / 2
-  normalGrad = -1 / grad
+
+  if grad != 0:
+    normalGrad = -1 / grad
+  else:
+    normalGrad = math.inf
 
   return normalGrad
 
-def widthAnalysis(points, im0, n):
+def get2Points(x, y, m, halfLen):
+  if m == math.inf:
+    x1 = x
+    x2 = x
+    y1 = y + halfLen
+    y2 = y - halfLen
+  else:
+    x1 = x - halfLen/sqrt(m**2 + 1)
+    x2 = x + halfLen/sqrt(m**2 + 1)
+
+    y1 = -m*(x - x1) + y
+    y2 = -m*(x - x2) + y
+  upPt = (y1, x1)
+  downPt = (y2, x2)
+  return  upPt, downPt
+
+def widthAnalysis(points, im0, n, increment=0.1, show=False):
   widths = []
   coordsList = []
-  for i in range(n, len(points) - n, n):
+  for i in range(n, len(points) - n):
     coords = points[i]
-    coordsNN = points[i + 1]
-    coordsPP = points[i - 1]
+    coordsNN = points[i + n]
+    coordsPP = points[i - n]
 
     gradient = getNormal(coordsPP, coords, coordsNN)
 
-    # check up and down width 
-    upwidth = 0
-    downwidth = 0
+    # # check up and down width 
+    # upwidth = 0
+    # downwidth = 0
 
-    curcoord = coords
-    cnt = 0
+    # curcoord = coords
+    # cnt = 0
 
-    # check up width
-    while 0 <= curcoord[1] < im0.shape[1] and 0 <= curcoord[0] < im0.shape[0] and (im0[curcoord[1]][curcoord[0]].any() or cnt <= 3):
-      cnt += 1
-      if not math.isnan(gradient) and not math.isinf(gradient):
-        # print(gradient)
-        x2 = curcoord[1] + 1
-        y2 = int(gradient * x2 - coords[1] * gradient + coords[0])
-      else:
-        x2 = curcoord[1]
-        y2 = curcoord[0] + 1
+    # # check up width
+    # while 0 <= curcoord[1] < im0.shape[1] and 0 <= curcoord[0] < im0.shape[0] and (im0[curcoord[1]][curcoord[0]].any() or cnt <= 3):
+    #   cnt += 1
+    #   if not math.isnan(gradient) and not math.isinf(gradient):
+    #     # print(gradient)
+    #     x2 = curcoord[1] + 1
+    #     y2 = int(gradient * x2 - coords[1] * gradient + coords[0])
+    #   else:
+    #     x2 = curcoord[1]
+    #     y2 = curcoord[0] + 1
 
-      curcoord = [y2, x2]
+    #   curcoord = [y2, x2]
     
-    upcoords = curcoord
-    curcoord = coords
+    # upcoords = curcoord
+    # curcoord = coords
 
-    cnt = 0
+    # cnt = 0
 
-    # check down width
+    # # check down width
     c = (200*random.random(),200*random.random(),200*random.random())
-    while 0 <= curcoord[1] < im0.shape[1] and 0 <= curcoord[0] < im0.shape[0] and (im0[curcoord[1]][curcoord[0]].any() or cnt <= 3):
-      cnt += 1
-      if not math.isnan(gradient) and not math.isinf(gradient):
-        x2 = curcoord[1] - 1
-        y2 = int(gradient * x2 - coords[1] * gradient + coords[0])
-      else:
-        x2 = curcoord[1]
-        y2 = curcoord[0] - 1
+    # while 0 <= curcoord[1] < im0.shape[1] and 0 <= curcoord[0] < im0.shape[0] and (im0[curcoord[1]][curcoord[0]].any() or cnt <= 3):
+    #   cnt += 1
+    #   if not math.isnan(gradient) and not math.isinf(gradient):
+    #     x2 = curcoord[1] - 1
+    #     y2 = int(gradient * x2 - coords[1] * gradient + coords[0])
+    #   else:
+    #     x2 = curcoord[1]
+    #     y2 = curcoord[0] - 1
 
-      # downwidth += math.sqrt((y2 - curcoord[0])**2 + (x2-curcoord[1])**2)
-      curcoord = [y2, x2]
+    #   # downwidth += math.sqrt((y2 - curcoord[0])**2 + (x2-curcoord[1])**2)
+    #   curcoord = [y2, x2]
 
-    downcoords = curcoord
+    # downcoords = curcoord
 
-    totalwidth = math.sqrt((upcoords[0] - downcoords[0])**2 + (upcoords[1] - downcoords[1])**2)
-    # cv2.line(im0, (upcoords[0], upcoords[1]), (downcoords[0], downcoords[1]), c, thickness=1)
+    upPt, downPt = get2Points(coords[1], coords[0], gradient, 20)
+    x, y = getPtsAlongLine(downPt, upPt, increment)
+    pxVal = getInterpolatedPtsVal(y, x, im0)
+
+    # totalwidth = math.sqrt((upcoords[0] - downcoords[0])**2 + (upcoords[1] - downcoords[1])**2)
+    totalwidth = (pxVal > 127.5).sum() * increment
+    if show:
+      cv2.line(im0, (int(upPt[0]), int(upPt[1])), (int(downPt[0]), int(downPt[1])), c, thickness=1)
+      cv2.imshow('',im0);cv2.waitKey(96)
 
     widths.append(totalwidth)
     coordsList.append((points[i][0], points[i][1]))
@@ -589,19 +624,19 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   all_pts = np.flip(all_pts, 1)
   # all_pts = locateAllPoints(destpt, skeleton)
   im0 = cv2.imread(f'{pathPrefix}/{filename}bin_mask.png')
-  imSegmented = cv2.imread(f'{pathPrefix}/{filename}segmented_threshold_binary.png')
+  imSegmented = cv2.imread(f'{pathPrefix}/{filename}segmented_threshold_binary.png', 0)
 
   im = (im0[:,:,0]>128).astype(np.uint8)
 
-  arr, coordsList = widthAnalysis(all_pts, imSegmented, 1)
+  arr, coordsList = widthAnalysis(all_pts, imSegmented, 3, show=False)
   arr = np.array(arr)
-  arr_s = smooth(arr, 11)
+  arr_s = smooth(arr, 22)
   average_width = np.average(arr) 
   # print(average_width)
 
   peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
   # determine length of each detected stenosis
-  stenosis_lengths = peak_widths(np.negative(arr_s), peaks, rel_height=0.3)[0]
+  stenosis_lengths = peak_widths(np.negative(arr_s), peaks, rel_height=0.5)[0]
 
 
   if show:
@@ -624,7 +659,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   score, percentages = scoring(arr_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths)
   return score, percentages
 
-score, percentages = getScore('1367_35_lcx1', folderDirectory='B:/segmented/', show=True)
+score, percentages = getScore('1367_35_lcx1', folderDirectory='A:/segmented/', show=True)
 print(score)
 print(percentages)
 
