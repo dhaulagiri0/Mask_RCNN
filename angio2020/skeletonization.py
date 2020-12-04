@@ -508,7 +508,7 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
   stenosis_segments = {}
 
   # average_width is the average width of the artery taken before smoothing
-  average_width_smoothed = np.average(widths)
+  # average_width_smoothed = np.average(widths)
   for i in range(0, len(peaks)):
     peak = peaks[i]
     stenosis_length = stenosis_lengths[i]
@@ -524,7 +524,10 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
       segment = artery_type
       if segment == 'lcx1': segment = 'lm'
     
-    percentage = (1. - float(width / average_width)) * 100.
+    localWidth = (widths[int(peak - stenosis_length / 2)] + widths[int(peak + stenosis_length / 2)]) / 2.
+    percentage = (1. - float(width / localWidth)) * 100.
+    if percentage < 0:
+      percentage = 0
 
     if segment in stenosis_segments:
       # only score maximum stenosis
