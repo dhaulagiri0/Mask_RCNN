@@ -93,7 +93,7 @@ for video in path.iterdir():
                         stenosisPercentages[segmentName].append(score)
     
     averagePerSegment(stenosisPercentages)
-    print('raw percentages', averagePerSegment)
+    print('raw percentages', stenosisPercentages)
     calculateErrors(stenosisPercentages, gtPercentages, errors)
 
 print('raw errors: ', errors)
