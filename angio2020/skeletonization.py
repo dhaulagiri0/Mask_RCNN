@@ -503,6 +503,9 @@ def scoring(widths, average_width, peaks, artery_type):
 
   stenosis_segments = {}
 
+  # determine length of each detected stenosis
+  # stenosis_lengths = peak_widths(widths, peaks, rel_height=0.5)
+
   # average_width is the average width of the artery taken before smoothing
   average_width_smoothed = np.average(widths)
   for peak in peaks:
@@ -571,12 +574,14 @@ def locateAllPoints(destpt, skeleton):
 
 def getScore(filename, folderDirectory='A:/segmented/', show=False):
 
+  pathPrefix = f"{folderDirectory}/{filename.split('_')[0]}"
+
   # default should be A:/segmented/
-  all_pts = skeletoniseSkimg(f'{folderDirectory}/{filename}bin_mask.png')
+  all_pts = skeletoniseSkimg(f"{pathPrefix}/{filename}bin_mask.png")
   all_pts = np.flip(all_pts, 1)
   # all_pts = locateAllPoints(destpt, skeleton)
-  im0 = cv2.imread(f'{folderDirectory}/{filename}bin_mask.png')
-  imSegmented = cv2.imread(f'{folderDirectory}/{filename}segmented_threshold_binary.png')
+  im0 = cv2.imread(f'{pathPrefix}/{filename}bin_mask.png')
+  imSegmented = cv2.imread(f'{pathPrefix}/{filename}segmented_threshold_binary.png')
 
   im = (im0[:,:,0]>128).astype(np.uint8)
 
@@ -587,11 +592,13 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   print(average_width)
 
   peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
+  stenosis_lengths = peak_widths(arr_s, peaks, rel_height=0.5)
 
   if show:
     # plt.plot(range(1, len(arr) + 1), arr)
     plt.plot(range(1, len(arr_s) + 1), arr_s)
     plt.plot(peaks, arr_s[peaks], "x")
+    plt.hlines(*stenosis_lengths[1:], color="C2")
     plt.show()
 
     circleIm = imSegmented
