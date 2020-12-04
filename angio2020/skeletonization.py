@@ -490,6 +490,8 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
     'lcx2' : [1.5, 1]
   }
 
+  scale = 6. / 12.5
+
   segments_list = {
     'lad' : ['proximal', 'mid', 'distal'],
     'lcx2' : ['proximal', 'distal']
@@ -530,12 +532,13 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
 
     if width == 0:
       # occlusion
-      score += factor * 5
+      # plus one for unknown time of formation
+      score += factor * 5 + 1
     elif width < 0.5 * average_width:
       # significant lesion
       score += factor * 2
     
-    if stenosis_lengths > 20:
+    if float(stenosis_lengths * scale) > 20:
       score += 1
     
   return score, stenosis_segments
