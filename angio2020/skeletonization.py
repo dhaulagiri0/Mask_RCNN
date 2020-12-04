@@ -483,7 +483,6 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
   # lcx1 is interpreted as the marginal artery
   # assume right dominant for all cases
   # TODO account for dominance as a user input
-  # TODO convert stenosis pixel lengths into actual lengths
   factors_list = {
     'lad' : [3.5, 2.5, 1],
     'diagonal' : [1],
