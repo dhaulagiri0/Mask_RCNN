@@ -476,13 +476,13 @@ def determineStenosisLocation(peak_position, artery_type, artery_length):
       # distal
       return 0
 
-def scoring(widths, average_width, peaks, artery_type):
+def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
   # widths array records widths from proximal to distal
   # factors are arranged from proximal to distal
   # lcx1 is interpreted as the marginal artery
   # assume right dominant for all cases
   # TODO account for dominance as a user input
-  # TODO account for stenosis length
+  # TODO convert stenosis pixel lengths into actual lengths
   factors_list = {
     'lad' : [3.5, 2.5, 1],
     'diagonal' : [1],
@@ -503,12 +503,11 @@ def scoring(widths, average_width, peaks, artery_type):
 
   stenosis_segments = {}
 
-  # determine length of each detected stenosis
-  # stenosis_lengths = peak_widths(widths, peaks, rel_height=0.5)
-
   # average_width is the average width of the artery taken before smoothing
   average_width_smoothed = np.average(widths)
-  for peak in peaks:
+  for i in range(0, len(peaks)):
+    peak = peaks[i]
+    stenosis_length = stenosis_lengths[i]
     width = widths[peak]
     # get Leaman factor for position
     if artery_type == 'lad' or artery_type == 'lcx2':
@@ -535,6 +534,9 @@ def scoring(widths, average_width, peaks, artery_type):
     elif width < 0.5 * average_width:
       # significant lesion
       score += factor * 2
+    
+    if stenosis_lengths > 20:
+      score += 1
     
   return score, stenosis_segments
 
@@ -592,7 +594,9 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   print(average_width)
 
   peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
-  stenosis_lengths = peak_widths(np.negative(arr_s), peaks, rel_height=0.5)
+  # determine length of each detected stenosis
+  stenosis_lengths = peak_widths(np.negative(arr_s), peaks, rel_height=0.3)[0]
+
 
   if show:
     # plt.plot(range(1, len(arr) + 1), arr)
@@ -611,10 +615,10 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
     # cv2.imshow('',circleIm);cv2.waitKey(0)
     cv2.imshow('',imSegmented);cv2.waitKey(0)
 
-  score, percentages = scoring(arr_s, average_width, peaks, filename.split('_')[-1])
+  score, percentages = scoring(arr_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths)
   return score, percentages
 
-score, percentages = getScore('1367_35_lcx1', folderDirectory='B:/segmented/', show=True)
+score, percentages = getScore('1367_35_lcx1', folderDirectory='A:/segmented/', show=False)
 print(score)
 print(percentages)
 
