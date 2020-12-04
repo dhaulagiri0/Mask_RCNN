@@ -490,12 +490,12 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
     'lcx2' : [1.5, 1]
   }
 
-  scale = 6. / 12.5
+  scale = 6. / 10.8
   stenosis_lengths = stenosis_lengths * scale
 
   segments_list = {
-    'lad' : ['proximal', 'mid', 'distal'],
-    'lcx2' : ['proximal', 'distal']
+    'lad' : ['p', 'm', 'd'],
+    'lcx2' : ['p', 'd']
   }
 
   factors = factors_list[artery_type]
