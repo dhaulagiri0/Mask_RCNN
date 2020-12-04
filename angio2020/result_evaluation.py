@@ -3,12 +3,13 @@ import numpy as np
 from pathlib import Path
 import math
 from skeletonization import getScore
+import os
 
-data = pd.read_csv("B://percentage_stenosis.csv")
+data = pd.read_csv("A://percentage_stenosis.csv")
 
 data = pd.DataFrame(data)
 
-pathString = 'A://segmented'
+pathString = 'B://segmented'
 path = Path(pathString)
 
 for video in path.iterdir():
@@ -41,11 +42,15 @@ for video in path.iterdir():
     for keyframe in video.iterdir():
         for artery in valid_arteries:
             filename = keyframe.name + '_' + artery
-            _, scores = getScore(filename, folderDirectory='A:/segmented/', show=False)
-            for key, score in scores.items():
-                segmentName = artery + '_' + key
-                if segmentName in valid_segments:
-                    stenosisPercentages[segmentName].append(score)
+            folderDirectory = 'B:/segmented/'
+            if os.path.exists(f"{folderDirectory}/{filename.split('_')[0]}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}/{filename}bin_mask.png"):
+                _, scores = getScore(filename, folderDirectory='B:/segmented/', show=False)
+                for key, score in scores.items():
+                    segmentName = artery + '_' + key
+                    if segmentName in valid_segments:
+                        stenosisPercentages[segmentName].append(score)
+
+    def average(stenosisPercentages):
 
     print(stenosisPercentages)
 
