@@ -523,7 +523,7 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
       segment = artery_type
       if segment == 'lcx1': segment = 'lm'
     
-    localWidth = (widths[peak - stenosis_length / 2.] + widths[peak + stenosis_length / 2.]) / 2.
+    localWidth = (widths[int(peak - stenosis_length / 2)] + widths[int(peak + stenosis_length / 2)]) / 2.
     percentage = (1. - float(width / localWidth)) * 100.
     if percentage < 0:
       percentage = 0
