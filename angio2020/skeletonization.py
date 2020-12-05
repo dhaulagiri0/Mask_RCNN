@@ -565,7 +565,11 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
     # sanity check width values
     if round(width, 2) <= 0: width = 0
     if localWidth < 0.5 * average_width: localWidth = average_width
-    percentage = (1. - float(width / localWidth)) * 100.
+
+    if width <= average_width:
+      percentage = (1. - float(width / average_width)) * 100.
+    else:
+      percentage = 0
 
     if percentage < 0:
       percentage = 0
