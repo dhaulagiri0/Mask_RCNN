@@ -630,7 +630,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
 
   arr, coordsList = widthAnalysis(all_pts, imSegmented, 3, show=False)
   arr = np.array(arr)
-  arr_s = smooth(arr, 22)
+  arr_s = smooth(arr, 11)
   average_width = np.average(arr) 
   # print(average_width)
 
@@ -659,9 +659,9 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   score, percentages = scoring(arr_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths)
   return score, percentages
 
-# score, percentages = getScore('1367_35_lcx1', folderDirectory='A:/segmented/', show=True)
-# print(score)
-# print(percentages)
+score, percentages = getScore('1367_35_lcx1', folderDirectory='A:/segmented/', show=True)
+print(score)
+print(percentages)
 
 # legacy code
 # if __name__ == "__main__":

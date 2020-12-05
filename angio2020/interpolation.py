@@ -2,6 +2,8 @@ import numpy as np
 from scipy.interpolate import RectBivariateSpline
 import cv2
 from decimal import Decimal
+import math
+from math import sqrt
 
 # xmax = 512
 # ymax = 512
@@ -19,7 +21,7 @@ from decimal import Decimal
 # print(round(Z2[()], 10))
 # # cv2.imshow('',Z2);cv2.waitKey(0)
 
-def getPtsAlongLine(srcPt, dstPt, gradient, increment=0.1):
+def getPtsAlongLineOld(srcPt, dstPt, increment=0.1):
     x1, y1 = srcPt
     x2, y2 = dstPt
     if x2 - x1 != 0:
@@ -29,6 +31,45 @@ def getPtsAlongLine(srcPt, dstPt, gradient, increment=0.1):
         for x in xcoords:
             y = gradient*(x - x1) + y1
             ycoords.append(y)
+    else: 
+        ycoords = np.arange(min(y1, y2), max(y1, y2) + increment, increment)
+        xcoords = [x1] * len(ycoords)
+
+    return np.asarray(xcoords), np.asarray(ycoords)
+
+def getNextPoint(x, y, m, increment):
+  if m == math.inf:
+    x1 = x
+    y1 = y + increment
+  else:
+    x1 = x - increment/sqrt(m**2 + 1)
+    y1 = -m*(x - x1) + y
+  return  x1, y1
+
+def getPtsAlongLine(srcPt, dstPt, increment=0.1):
+    x1, y1 = srcPt
+    x2, y2 = dstPt
+    xcoords = []
+    ycoords = []
+    if x1 > x2:
+        xcoords.append(x1)
+        ycoords.append(y1)
+    else:
+        xcoords.append(x2)
+        ycoords.append(y2)
+    if x2 - x1 != 0:
+        gradient = (y2 - y1) / (x2 - x1)
+        distance = sqrt((x1 + x2)**2 + (y1 + y2)**2)
+        steps = int(distance / increment)
+        for _ in range(steps):
+            x, y = getNextPoint(xcoords[-1], ycoords[-1], gradient, increment)
+            xcoords.append(x)
+            ycoords.append(y)
+        # xcoords = np.arange(min(x1, x2), max(x1, x2) + increment, increment)
+        # ycoords = []
+        # for x in xcoords:
+        #     y = gradient*(x - x1) + y1
+        #     ycoords.append(y)
     else: 
         ycoords = np.arange(min(y1, y2), max(y1, y2) + increment, increment)
         xcoords = [x1] * len(ycoords)
