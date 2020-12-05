@@ -4,26 +4,22 @@
 # Lingdong Huang 2020
 
 import numpy as np
-import cv2
-from skimage.draw import line
 from matplotlib import pyplot as plt
-from scipy.signal import argrelextrema, find_peaks, peak_widths
-import math
+from scipy.signal import argrelextrema, find_peaks, peak_widths, savgol_filter
+from skimage.draw import line
 from skimage.morphology import skeletonize
-from skimage import data
-import matplotlib.pyplot as plt
+from skimage import data, io, img_as_uint
 from skimage.util import invert
-from skimage import data
 from skimage.color import rgb2gray
-from skimage import io, img_as_uint
 from skimage.filters import threshold_otsu
 from skan import Skeleton, summarize, skeleton_to_csgraph
-import pandas as pd
 import cv2
 import random
 import os
-from interpolation import *
+import math
 from math import sqrt
+
+from interpolation import *
 
 # binary image thinning (skeletonization) in-place.
 # implements Zhang-Suen algorithm.
@@ -630,8 +626,9 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
 
   arr, coordsList = widthAnalysis(all_pts, imSegmented, 3, show=False)
   arr = np.array(arr)
-  arr_s = smooth(arr, 11)
+  arr_s = savgol_filter(arr, 21, 3)
   average_width = np.average(arr) 
+  print(len(arr_s), len(arr))
   # print(average_width)
 
   peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
