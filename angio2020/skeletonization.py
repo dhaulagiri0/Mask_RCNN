@@ -551,10 +551,22 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
     else:
       factor = factors[0]
       segment = artery_type
-      if segment == 'lcx1': segment = 'lm'
+      if segment == 'lcx1': segment = 'lcx1'
     
-    localWidth = (widths[int(peak - stenosis_length / 2)] + widths[int(peak + stenosis_length / 2)]) / 2.
+    upperBound = int(peak - stenosis_length / 2)
+    lowerBound = int(peak + stenosis_length / 2)
+    if upperBound >= len(widths): upperBound = len(widths) - 1
+    if lowerBound >= len(widths): lowerBound = len(widths) - 1
+    if lowerBound < 0: lowerBound = 0
+    if upperBound < 0: upperBound = 0
+
+    localWidth = (widths[upperBound] + widths[lowerBound]) / 2.
+
+    # sanity check width values
+    if round(width, 2) <= 0: width = 0
+    if localWidth < 0.5 * average_width: localWidth = average_width
     percentage = (1. - float(width / localWidth)) * 100.
+
     if percentage < 0:
       percentage = 0
 
@@ -628,7 +640,6 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   arr = np.array(arr)
   arr_s = savgol_filter(arr, 21, 3)
   average_width = np.average(arr) 
-  print(len(arr_s), len(arr))
   # print(average_width)
 
   peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
@@ -656,9 +667,9 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   score, percentages = scoring(arr_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths)
   return score, percentages
 
-score, percentages = getScore('1367_35_lcx1', folderDirectory='A:/segmented/', show=True)
-print(score)
-print(percentages)
+# score, percentages = getScore('1578_044_lcx1', folderDirectory='A:/segmented/', show=True)
+# print(score)
+# print(percentages)
 
 # legacy code
 # if __name__ == "__main__":
