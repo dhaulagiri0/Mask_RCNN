@@ -690,7 +690,15 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   arr, coordsList = widthAnalysis(all_pts, imSegmented, 4, show=False, draw_im0=imSegmented.copy())
   arr = np.array(arr)
-  arr_s = savgol_filter(arr, 21, 3)
+
+  window_size = 21
+
+  print(filename)
+  if len(arr) > window_size:
+    arr_s = savgol_filter(arr, window_size, 3)
+  else:
+    return None, None
+
   average_width = np.average(arr) 
   # print(average_width)
 
