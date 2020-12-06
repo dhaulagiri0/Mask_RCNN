@@ -469,10 +469,13 @@ def widthAnalysis(points, im0, n, increment=0.1, show=False, draw_im0 = []):
     # totalwidth1 = (pxVal > 127.5).sum() * increment
     a = np.where(pxVal > 127.5, 1, 0)
 
-    m = np.r_[False,a==1,False]
+    m = np.r_[False, a==1, False]
     idx = np.flatnonzero(m[:-1]!=m[1:])
-    largest_island_len = (idx[1::2]-idx[::2]).max()
-    totalwidth = largest_island_len * increment
+    if len(idx > 0):
+      largest_island_len = (idx[1::2]-idx[::2]).max()
+      totalwidth = largest_island_len * increment
+    else:
+      totalwidth = 0
 
     if show and len(draw_im0) > 0:
       cv2.line(draw_im0, (int(upPt[0]), int(upPt[1])), (int(downPt[0]), int(downPt[1])), (127, 127, 127), thickness=1)
@@ -593,13 +596,13 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsL
       # occlusion
       # plus one for unknown time of formation
       score += factor * 5 + 1
-      cv2.circle(img, coordsList[peak], int(stenpixels[i]/2), (255, 0, 0), 1)
+      cv2.circle(img, coordsList[peak], int(average_width*1.5), (255, 0, 0), 1)
     elif width < 0.5 * localWidth:
       # significant lesion
       score += factor * 2
-      cv2.circle(img, coordsList[peak], int(stenpixels[i]/2), (255, 0, 0), 1)
+      cv2.circle(img, coordsList[peak], int(average_width*1.5), (255, 0, 0), 1)
     else:
-      cv2.circle(img, coordsList[peak], int(stenpixels[i]/2), (0, 255, 0), 1)
+      cv2.circle(img, coordsList[peak], int(average_width*1.5), (0, 255, 0), 1)
     
     if stenosis_length > 20:
       score += 1
@@ -716,9 +719,10 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   score, percentages = scoring(arr_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths, coordsList, imDisplay)
 
+  plt.cla()
   plt.plot(range(1, len(arr_s) + 1), arr_s)
   plt.plot(peaks, arr_s[peaks], "x")
-  plt.hlines(*stenosis_lengths_[1:], color="C2")
+  # plt.hlines(*stenosis_lengths_[1:], color="C2")
 
   if show:
     cv2.imshow('stenosis locations', imDisplay);cv2.waitKey(0)
@@ -731,7 +735,6 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
     outPath = f"{folderDirectory.split('/')[0]}/detections/{filename}"
     cv2.imwrite(outPath + '_stenosis_locations.png', imDisplay)
     plt.savefig(outPath + '_width_plot.png')
-    plt.cla()
 
   return score, percentages
 
