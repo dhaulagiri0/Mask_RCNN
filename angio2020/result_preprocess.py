@@ -27,7 +27,7 @@ def upContrast(img):
     l, a, b = cv2.split(lab)
 
     # Applying CLAHE to L-channel
-    clahe = cv2.createCLAHE(clipLimit=12.0, tileGridSize=(5,5))
+    clahe = cv2.createCLAHE(clipLimit=7.0, tileGridSize=(5,5))
     cl = clahe.apply(l)
 
     # Merge the CLAHE enhanced L-channel with the a and b channel
@@ -92,11 +92,11 @@ def makeSegmentations(data_path, subset, save_path):
                     cv2.imwrite(data_path + '/png/' + image_id + '.png', originalImage)
 
                 originalImage = cv2.imread(data_path + '/png/' + image_id + '.png')
-                originalImage = upContrast(originalImage)
-                originalImage = cv2.cvtColor(originalImage, cv2.COLOR_RGB2GRAY)
+                upCon = upContrast(originalImage.copy())
+                upCon = cv2.cvtColor(upCon, cv2.COLOR_RGB2GRAY)
 
                 # isolate masked region
-                segmented = cv2.bitwise_and(originalImage, originalImage, mask=binMask)
+                segmented = cv2.bitwise_and(upCon, upCon, mask=binMask)
                 segmented_v = segmented
 
                 # find sum of pixel value
@@ -112,7 +112,7 @@ def makeSegmentations(data_path, subset, save_path):
                 # ret3, otsu = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
                 nonzero = np.array(segmented[segmented > 0])
                 # segmented[segmented == 0] = -1
-                otsu_thresh = otsu(nonzero)
+                otsu_thresh = otsu(upCon, is_reduce_noise=True)
 
                 # threshold segmented image by otsu value
                 ret, segmented_thresh = cv2.threshold(segmented , otsu_thresh, 0, cv2.THRESH_TOZERO_INV)

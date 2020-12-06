@@ -86,7 +86,7 @@ for video in path.iterdir():
             filename = keyframe.name + '_' + artery
             # folderDirectory = pathString
             if os.path.exists(f"{pathString}/{filename.split('_')[0]}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}/{filename}bin_mask.png"):
-                _, scores = getScore(filename, folderDirectory=pathString, show=False)
+                _, scores = getScore(filename, folderDirectory=pathString, show=False, save=True)
                 # print(f'{filename}: ' ,scores)
                 for key, score in scores.items():
                     segmentName = artery + '_' + key
