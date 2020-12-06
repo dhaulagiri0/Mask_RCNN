@@ -18,6 +18,7 @@ import random
 import os
 import math
 from math import sqrt
+from itertools import groupby
 
 from interpolation import *
 
@@ -409,7 +410,7 @@ def get2Points(x, y, m, halfLen):
   downPt = (y2, x2)
   return  upPt, downPt
 
-def widthAnalysis(points, im0, n, increment=0.1, show=False):
+def widthAnalysis(points, im0, n, increment=0.1, show=False, draw_im0 = []):
   widths = []
   coordsList = []
   for i in range(n, len(points) - n):
@@ -445,7 +446,6 @@ def widthAnalysis(points, im0, n, increment=0.1, show=False):
     # cnt = 0
 
     # # check down width
-    c = (200*random.random(),200*random.random(),200*random.random())
     # while 0 <= curcoord[1] < im0.shape[1] and 0 <= curcoord[0] < im0.shape[0] and (im0[curcoord[1]][curcoord[0]].any() or cnt <= 3):
     #   cnt += 1
     #   if not math.isnan(gradient) and not math.isinf(gradient):
@@ -459,16 +459,24 @@ def widthAnalysis(points, im0, n, increment=0.1, show=False):
     #   curcoord = [y2, x2]
 
     # downcoords = curcoord
-
+    # upPt = upcoords
+    # downPt = downcoords
     upPt, downPt = get2Points(coords[1], coords[0], gradient, 20)
     x, y = getPtsAlongLine(downPt, upPt, increment)
     pxVal = getInterpolatedPtsVal(y, x, im0)
 
     # totalwidth = math.sqrt((upcoords[0] - downcoords[0])**2 + (upcoords[1] - downcoords[1])**2)
-    totalwidth = (pxVal > 127.5).sum() * increment
-    if show:
-      cv2.line(im0, (int(upPt[0]), int(upPt[1])), (int(downPt[0]), int(downPt[1])), c, thickness=1)
-      cv2.imshow('',im0);cv2.waitKey(96)
+    # totalwidth1 = (pxVal > 127.5).sum() * increment
+    a = np.where(pxVal > 127.5, 1, 0)
+
+    m = np.r_[False,a==1,False]
+    idx = np.flatnonzero(m[:-1]!=m[1:])
+    largest_island_len = (idx[1::2]-idx[::2]).max()
+    totalwidth = largest_island_len * increment
+
+    if show and len(draw_im0) > 0:
+      cv2.line(draw_im0, (int(upPt[0]), int(upPt[1])), (int(downPt[0]), int(downPt[1])), (127, 127, 127), thickness=1)
+      cv2.imshow('',draw_im0);cv2.waitKey(96)
 
     widths.append(totalwidth)
     coordsList.append((points[i][0], points[i][1]))
@@ -507,7 +515,7 @@ def determineStenosisLocation(peak_position, artery_type, artery_length):
       # distal
       return 0
 
-def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
+def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsList, img):
   # widths array records widths from proximal to distal
   # factors are arranged from proximal to distal
   # lcx1 is interpreted as the marginal artery
@@ -521,6 +529,7 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
   }
 
   scale = 6. / 10.8
+  stenpixels = stenosis_lengths 
   stenosis_lengths = stenosis_lengths * scale
 
   segments_list = {
@@ -553,8 +562,8 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
       segment = artery_type
       if segment == 'lcx1': segment = 'lcx1'
     
-    upperBound = int(peak - stenosis_length / 2)
-    lowerBound = int(peak + stenosis_length / 2)
+    upperBound = int(peak - stenpixels[i] / 2)
+    lowerBound = int(peak + stenpixels[i] / 2)
     if upperBound >= len(widths): upperBound = len(widths) - 1
     if lowerBound >= len(widths): lowerBound = len(widths) - 1
     if lowerBound < 0: lowerBound = 0
@@ -584,31 +593,65 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths):
       # occlusion
       # plus one for unknown time of formation
       score += factor * 5 + 1
-    elif width < 0.5 * average_width:
+      cv2.circle(img, coordsList[peak], int(stenpixels[i]/2), (255, 0, 0), 1)
+    elif width < 0.5 * localWidth:
       # significant lesion
       score += factor * 2
+      cv2.circle(img, coordsList[peak], int(stenpixels[i]/2), (255, 0, 0), 1)
+    else:
+      cv2.circle(img, coordsList[peak], int(stenpixels[i]/2), (0, 255, 0), 1)
     
     if stenosis_length > 20:
       score += 1
     
   return score, stenosis_segments
 
+def traverseSkeleton(start, end, graph, coords):
+  coordsOrdered = []
+  curCoord = start
+  rows = np.where(coords == curCoord)
+  curIndex = np.argmax(np.bincount(rows[0])) + 1
+  prevIndex = -1
+  rows = np.where(coords == end)
+  endIndex = np.argmax(np.bincount(rows[0]))
+
+  while curIndex != endIndex:
+    if prevIndex != -1:
+      graph[curIndex][prevIndex] = 0
+    coordsOrdered.append(curCoord)
+    prevIndex = curIndex
+    curIndex = np.nonzero(graph[curIndex])[0][0]
+    curCoord = coords[curIndex - 1]
+  coordsOrdered.append(end)
+  return np.asarray(coordsOrdered)
+
+
 def skeletoniseSkimg(maskFilePath):
-  # Invert the horse image
   image = io.imread(maskFilePath)
 
   image = rgb2gray(image)
 
-  thresh = threshold_otsu(image)
-  binary = image > thresh
+  # thresh = threshold_otsu(image)
+  binary = image > 0
 
   # perform skeletonization
   skeleton = skeletonize(binary)
+  summary = summarize(Skeleton(skeleton, spacing=1))
+  # starting coordinate in y, x
+  startCoord = [summary.iloc[0]['image-coord-src-0'], summary.iloc[0]['image-coord-src-1']] 
+  endCoord = [summary.iloc[0]['image-coord-dst-0'], summary.iloc[0]['image-coord-dst-1']]
 
   # c0 contains information of all points on the skeleton
   g0, c0, _ = skeleton_to_csgraph(skeleton, spacing=1)
   all_pts = c0[1:]
-  return all_pts.astype(int)
+  # print(g0.toarray())
+
+  # index = np.where(all_pts == startCoord)
+  # print(index)
+  # print(all_pts[np.argmax(np.bincount(index[0]))]) 
+  pts = traverseSkeleton(startCoord, endCoord, g0.toarray(), all_pts)
+
+  return pts.astype(int)
 
 def locateAllPoints(destpt, skeleton):
   pts = []
@@ -627,7 +670,7 @@ def locateAllPoints(destpt, skeleton):
   return pts
 
 
-def getScore(filename, folderDirectory='A:/segmented/', show=False):
+def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   pathPrefix = f"{folderDirectory}/{filename.split('_')[0]}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}"
   
@@ -636,11 +679,13 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
   all_pts = np.flip(all_pts, 1)
   # all_pts = locateAllPoints(destpt, skeleton)
   im0 = cv2.imread(f'{pathPrefix}/{filename}bin_mask.png')
-  imSegmented = cv2.imread(f'{pathPrefix}/{filename}segmented_threshold_binary.png', 0)
+  # imSegmented = cv2.imread(f'{pathPrefix}/{filename}segmented_threshold_binary.png', 0)
+  imDisplay = cv2.imread(f'{pathPrefix}/{filename}segmented_threshold_binary.png')
+  imSegmented = cv2.cvtColor(imDisplay, cv2.COLOR_BGR2GRAY)
 
   im = (im0[:,:,0]>128).astype(np.uint8)
 
-  arr, coordsList = widthAnalysis(all_pts, imSegmented, 3, show=False)
+  arr, coordsList = widthAnalysis(all_pts, imSegmented, 4, show=False, draw_im0=imSegmented.copy())
   arr = np.array(arr)
   arr_s = savgol_filter(arr, 21, 3)
   average_width = np.average(arr) 
@@ -648,30 +693,49 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False):
 
   peaks, properties = find_peaks(np.negative(arr_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
   # determine length of each detected stenosis
-  stenosis_lengths = peak_widths(np.negative(arr_s), peaks, rel_height=0.5)[0]
+  stenosis_lengths_ = peak_widths(np.negative(arr_s), peaks, rel_height=0.7)
+  stenosis_lengths = stenosis_lengths_[0]
 
+
+  # if show:
+  #   # plt.plot(range(1, len(arr) + 1), arr)
+  #   plt.plot(range(1, len(arr_s) + 1), arr_s)
+  #   plt.plot(peaks, arr_s[peaks], "x")
+  #   plt.hlines(*stenosis_lengths[1:], color="C2")
+  #   plt.show()
+    # print(stenosis_lengths)
+
+  #   circleIm = imSegmented
+  #   for peak in peaks:
+  #     # print(int((peak / len(peaks)) * len(coordsList)))
+  #     c = (200*random.random(),200*random.random(),200*random.random())
+  #     cv2.circle(circleIm, coordsList[peak], 2, c, 2)
+
+  #   # cv2.imshow('',circleIm);cv2.waitKey(0)
+  #   cv2.imshow('',imSegmented);cv2.waitKey(0)
+
+  score, percentages = scoring(arr_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths, coordsList, imDisplay)
+
+  plt.plot(range(1, len(arr_s) + 1), arr_s)
+  plt.plot(peaks, arr_s[peaks], "x")
+  plt.hlines(*stenosis_lengths_[1:], color="C2")
 
   if show:
-    # plt.plot(range(1, len(arr) + 1), arr)
-    plt.plot(range(1, len(arr_s) + 1), arr_s)
-    plt.plot(peaks, arr_s[peaks], "x")
-    # plt.hlines(*stenosis_lengths[1:], color="C2")
+    cv2.imshow('stenosis locations', imDisplay);cv2.waitKey(0)
     plt.show()
-    print(stenosis_lengths)
 
-    circleIm = imSegmented
-    for peak in peaks:
-      # print(int((peak / len(peaks)) * len(coordsList)))
-      c = (200*random.random(),200*random.random(),200*random.random())
-      cv2.circle(circleIm, coordsList[int((peak / len(arr_s)) * len(coordsList))], 2, c, 2)
+  if save:
+    if not os.path.exists(f"{folderDirectory.split('/')[0]}/detections"):
+      os.mkdir(f"{folderDirectory.split('/')[0]}/detections")
 
-    # cv2.imshow('',circleIm);cv2.waitKey(0)
-    cv2.imshow('',imSegmented);cv2.waitKey(0)
+    outPath = f"{folderDirectory.split('/')[0]}/detections/{filename}"
+    cv2.imwrite(outPath + '_stenosis_locations.png', imDisplay)
+    plt.savefig(outPath + '_width_plot.png')
+    plt.cla()
 
-  score, percentages = scoring(arr_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths)
   return score, percentages
 
-# score, percentages = getScore('1578_044_lcx1', folderDirectory='A:/segmented/', show=True)
+# score, percentages = getScore('1578_046_lad', folderDirectory='A:/segmented/', show=True, save=True)
 # print(score)
 # print(percentages)
 
