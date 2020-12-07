@@ -5,38 +5,10 @@ from decimal import Decimal
 import math
 from math import sqrt
 
-# xmax = 512
-# ymax = 512
-
-# xcoords = np.arange(xmax)
-# ycoords = np.arange(ymax)
-
-# sp = RectBivariateSpline(xcoords, ycoords, image)
-# # dx2, dy2 = 0.16, 0.16
-# # x2 = np.arange(xmin, xmax, dx2)
-# # y2 = np.arange(ymin, ymax, dy2)
-# #y value first then x
-# Z2 = sp(266, 286, grid=False)
-# Z3 = sp(290.1, 230.1, grid=False)
-# print(round(Z2[()], 10))
-# # cv2.imshow('',Z2);cv2.waitKey(0)
-
-def getPtsAlongLineOld(srcPt, dstPt, increment=0.1):
-    x1, y1 = srcPt
-    x2, y2 = dstPt
-    if x2 - x1 != 0:
-        gradient = (y2 - y1) / (x2 - x1)
-        xcoords = np.arange(min(x1, x2), max(x1, x2) + increment, increment)
-        ycoords = []
-        for x in xcoords:
-            y = gradient*(x - x1) + y1
-            ycoords.append(y)
-    else: 
-        ycoords = np.arange(min(y1, y2), max(y1, y2) + increment, increment)
-        xcoords = [x1] * len(ycoords)
-
-    return np.asarray(xcoords), np.asarray(ycoords)
-
+# gets a point thats a certain unit (whatever value increment is)
+# away from the first the coordinates (x, y) along the given line
+# the point given will have a smaller x value than the given x
+# x, y should always be a point on the right of the next point on the x-axis
 def getNextPoint(x, y, m, increment):
   if m == math.inf:
     x1 = x
@@ -46,11 +18,15 @@ def getNextPoint(x, y, m, increment):
     y1 = -m*(x - x1) + y
   return  x1, y1
 
+# given two points, find points that are along the line
+# each point is one increment in absolute distance away from the previous point along the line
+# the sequence of the points given does not matter
 def getPtsAlongLine(srcPt, dstPt, increment=0.1):
     x1, y1 = srcPt
     x2, y2 = dstPt
     xcoords = []
     ycoords = []
+    # find out which point is on the right along the x-axis
     if x1 > x2:
         xcoords.append(x1)
         ycoords.append(y1)
@@ -62,15 +38,12 @@ def getPtsAlongLine(srcPt, dstPt, increment=0.1):
         distance = sqrt((x1 + x2)**2 + (y1 + y2)**2)
         steps = int(distance / increment)
         for _ in range(steps):
+            # get next point to the left of the current one along the line
             x, y = getNextPoint(xcoords[-1], ycoords[-1], gradient, increment)
             xcoords.append(x)
             ycoords.append(y)
-        # xcoords = np.arange(min(x1, x2), max(x1, x2) + increment, increment)
-        # ycoords = []
-        # for x in xcoords:
-        #     y = gradient*(x - x1) + y1
-        #     ycoords.append(y)
     else: 
+        # its a straight line parallel to the y-axis
         ycoords = np.arange(min(y1, y2), max(y1, y2) + increment, increment)
         xcoords = [x1] * len(ycoords)
 
@@ -78,6 +51,7 @@ def getPtsAlongLine(srcPt, dstPt, increment=0.1):
 
 
 # x and y are lists of coordinates along the normal line
+# returns all the interpolated pixel values of the image along the given line
 def getInterpolatedPtsVal(x, y, img):
     xmax = img.shape[0]
     ymax = img.shape[1]
@@ -86,12 +60,21 @@ def getInterpolatedPtsVal(x, y, img):
     sp = RectBivariateSpline(xcoords, ycoords, img)
     return sp(x, y, grid=False)
 
-# img = cv2.imread('A:/segmented/1367/1367_35/1367_35_lcx1segmented_threshold_binary.png', 0)
-# x, y = getPtsAlongLine((248, 118), (256, 109))
-# pxVal = getInterpolatedPtsVal(y, x, img)
-# print(np.amax(img))
-# # # sp = getInterpolatedImg(img)
-# # # pxVal = getPtsAlongLine((195, 272), (185, 282), -1, sp)
-# print(x, y)
-# print(pxVal)
-# print((pxVal > 127.5).sum())
+
+# legacy code 
+# def getPtsAlongLineOld(srcPt, dstPt, increment=0.1):
+#     x1, y1 = srcPt
+#     x2, y2 = dstPt
+#     if x2 - x1 != 0:
+#         gradient = (y2 - y1) / (x2 - x1)
+#         xcoords = np.arange(min(x1, x2), max(x1, x2) + increment, increment)
+#         ycoords = []
+#         for x in xcoords:
+#             y = gradient*(x - x1) + y1
+#             ycoords.append(y)
+#     else: 
+#         ycoords = np.arange(min(y1, y2), max(y1, y2) + increment, increment)
+#         xcoords = [x1] * len(ycoords)
+
+#     return np.asarray(xcoords), np.asarray(ycoords)
+
