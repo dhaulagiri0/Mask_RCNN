@@ -321,9 +321,9 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   return score, percentages
 
-score, percentages = getScore('1578_046_lad', folderDirectory='A:/segmented/', show=True, save=False)
-print(score)
-print(percentages)
+# score, percentages = getScore('1578_046_lad', folderDirectory='A:/segmented/', show=True, save=False)
+# print(score)
+# print(percentages)
 
 # legacy code
 # if __name__ == "__main__":

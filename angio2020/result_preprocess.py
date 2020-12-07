@@ -137,11 +137,11 @@ def makeSegmentations(data_path, subset, save_path):
                 segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
                 segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
 
-                filePrefix = f"{save_path}{image_id.split('_')[0]}/{image_id}/{f.name.split('.')[0]}"
-                if not os.path.exists(f"{save_path}{image_id.split('_')[0]}"):
-                    os.mkdir(f"{save_path}{image_id.split('_')[0]}")
-                if not os.path.exists(f"{save_path}{image_id.split('_')[0]}/{image_id}"):
-                    os.mkdir(f"{save_path}{image_id.split('_')[0]}/{image_id}")
+                filePrefix = f"{save_path}/{image_id.split('_')[0]}/{image_id}/{f.name.split('.')[0]}"
+                if not os.path.exists(f"{save_path}/{image_id.split('_')[0]}"):
+                    os.mkdir(f"{save_path}/{image_id.split('_')[0]}")
+                if not os.path.exists(f"{save_path}/{image_id.split('_')[0]}/{image_id}"):
+                    os.mkdir(f"{save_path}/{image_id.split('_')[0]}/{image_id}")
                 # save
                 imageio.imwrite(filePrefix + 'bin_mask.png', binMask)
                 imageio.imwrite(filePrefix + 'segmented.png', segmented_v)
@@ -149,5 +149,28 @@ def makeSegmentations(data_path, subset, save_path):
                 imageio.imwrite(filePrefix + 'segmented_threshold_binary.png', segmented_binary)
                 imageio.imwrite(filePrefix + 'segmented_threshold.png', segmented_thresh)
                 # print(f.name.split('.')[0] + ' area percentage: ' + str(percentage))
+                print(f'processed: {f.name}')
 
-makeSegmentations('A:/test', 'test', 'A:/segmented/')
+
+if __name__ == "__main__":
+    import argparse
+
+     # Parse command line arguments
+    parser = argparse.ArgumentParser(
+        description='Generate segmentation masks of arteries')
+    parser.add_argument('--destination_path', required=False,
+                        default='A:/segmented/',
+                        metavar="/path/to/angio/",
+                        help="Directory folder for generated masks (default: A:/segmented)")
+    parser.add_argument('--subset_folder', required=False,
+                        default='A:/test/',
+                        metavar="/path/to/subset",
+                        help="Path to whichever subset will be used to generate the segmentation maps: train, test or val. Default: A:/test")
+
+
+    args = parser.parse_args()
+    destPath = args.destination_path
+    subsetPath = args.subset_folder
+    subset = subsetPath.split('/')[-1]
+
+    makeSegmentations(subsetPath, subset, destPath)
