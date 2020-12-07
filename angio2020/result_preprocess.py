@@ -3,11 +3,13 @@ import numpy as np
 import matplotlib.cm as cm
 from matplotlib import pyplot as plt
 from pycocotools import mask as maskUtils
+from skimage.filters import hessian
 from pathlib import Path
 import json
 import imageio
 from PIL import Image
 import os
+from skimage.segmentation import flood, flood_fill
 
 def toBinMask(img=None, path=None, threshold=10):
     if path:
@@ -36,6 +38,15 @@ def upContrast(img):
     # Converting image from LAB Color model to RGB model
     lab = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
     return lab
+
+def hessianFiltering(image, fileprefix):
+    # img must be read with skimg
+    image_f = hessian(image, sigmas=[1], black_ridges=False)
+    final_image = np.multiply(image_f, image).astype(np.uint8)
+    imageio.imwrite(f'{fileprefix}_hessian_filtered.png', final_image)
+    image = cv2.imread(f'{fileprefix}_hessian_filtered.png', 0)
+    return cv2.imread(f'{fileprefix}_hessian_filtered.png', 0)
+
 
 def otsu(image, is_normalized=True, is_reduce_noise=False):
 
@@ -73,7 +84,7 @@ def otsu(image, is_normalized=True, is_reduce_noise=False):
     threshold = bin_mids[:-1][index_of_max_val]
     return threshold
 
-def makeSegmentations(data_path, subset, save_path):
+def makeSegmentations(data_path, subset, save_path, hess=False):
     p = Path(data_path)
     # navigates the items found in data folder
     for item in p.iterdir():
@@ -90,6 +101,15 @@ def makeSegmentations(data_path, subset, save_path):
                     if not os.path.exists(data_path + '/png'): os.mkdir(data_path + '/png')
                     originalImage = cv2.imread(data_path + '/' + image_id + '.jpeg')
                     cv2.imwrite(data_path + '/png/' + image_id + '.png', originalImage)
+
+                # path for saving processed image files
+                filePrefix = f"{save_path}/{image_id.split('_')[0]}/{image_id}/{f.name.split('.')[0]}"
+                
+                # create save paths
+                if not os.path.exists(f"{save_path}/{image_id.split('_')[0]}"):
+                    os.mkdir(f"{save_path}/{image_id.split('_')[0]}")
+                if not os.path.exists(f"{save_path}/{image_id.split('_')[0]}/{image_id}"):
+                    os.mkdir(f"{save_path}/{image_id.split('_')[0]}/{image_id}")
 
                 originalImage = cv2.imread(data_path + '/png/' + image_id + '.png')
                 upCon = upContrast(originalImage.copy())
@@ -108,14 +128,17 @@ def makeSegmentations(data_path, subset, save_path):
                 # mean pixel value
                 meanPx = sumPx / occ
 
-                # # Otsu Thresholding
-                # ret3, otsu = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-                nonzero = np.array(segmented[segmented > 0])
-                # segmented[segmented == 0] = -1
-                otsu_thresh = otsu(upCon, is_reduce_noise=True)
 
-                # threshold segmented image by otsu value
-                ret, segmented_thresh = cv2.threshold(segmented , otsu_thresh, 0, cv2.THRESH_TOZERO_INV)
+                if hess:
+                    segmented_thresh = hessianFiltering(segmented, filePrefix)
+                else:
+                    # Otsu Thresholding
+                    # get only non-zero pixel values to select otsu threshold
+                    nonzero = np.array(segmented[segmented > 0])
+                    otsu_thresh = otsu(upCon, is_reduce_noise=True)
+
+                    # threshold segmented image by otsu value
+                    ret, segmented_thresh = cv2.threshold(segmented , otsu_thresh, 0, cv2.THRESH_TOZERO_INV)
 
                 # threshold segmented image by mean
                 # ret, segmented_thresh = cv2.threshold(segmented , meanPx*1.2, 0, cv2.THRESH_TOZERO_INV)
@@ -132,16 +155,15 @@ def makeSegmentations(data_path, subset, save_path):
 
                 # morphology opening and closing
                 segmented_binary = cv2.resize(segmented_binary, (segmented_binary.shape[0]*2, segmented_binary.shape[1]*2), interpolation=cv2.INTER_AREA)
-                kernel = np.ones((2,2),np.uint8)
-                segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=4)
-                segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
+                if hess:
+                    kernel = np.ones((4,4),np.uint8)
+                    segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
+                else:
+                    kernel = np.ones((2,2),np.uint8)
+                    segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=4)
+                    segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
                 segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
 
-                filePrefix = f"{save_path}/{image_id.split('_')[0]}/{image_id}/{f.name.split('.')[0]}"
-                if not os.path.exists(f"{save_path}/{image_id.split('_')[0]}"):
-                    os.mkdir(f"{save_path}/{image_id.split('_')[0]}")
-                if not os.path.exists(f"{save_path}/{image_id.split('_')[0]}/{image_id}"):
-                    os.mkdir(f"{save_path}/{image_id.split('_')[0]}/{image_id}")
                 # save
                 imageio.imwrite(filePrefix + 'bin_mask.png', binMask)
                 imageio.imwrite(filePrefix + 'segmented.png', segmented_v)
@@ -166,11 +188,18 @@ if __name__ == "__main__":
                         default='A:/test/',
                         metavar="/path/to/subset",
                         help="Path to whichever subset will be used to generate the segmentation maps: train, test or val. Default: A:/test")
+    parser.add_argument('--mode', required=False,
+                    default='otsu',
+                    metavar="bool",
+                    help="thresholding mode to use: hess or otsu (default)")
 
 
     args = parser.parse_args()
     destPath = args.destination_path
     subsetPath = args.subset_folder
     subset = subsetPath.split('/')[-1]
-
-    makeSegmentations(subsetPath, subset, destPath)
+    mode = args.mode
+    if mode == 'hess':
+        makeSegmentations(subsetPath, subset, destPath, hess=True)
+    else:
+        makeSegmentations(subsetPath, subset, destPath, hess=False)
