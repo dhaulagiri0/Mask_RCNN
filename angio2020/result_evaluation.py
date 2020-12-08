@@ -24,28 +24,33 @@ def calculateErrors(predDict, gtDict, errorsDict):
             errorsDict[segment].append(error)
 
 
+if __name__ == "__main__":
+    import argparse
 
-data = pd.read_csv("B:/percentage_stenosis.csv")
+     # Parse command line arguments
+    parser = argparse.ArgumentParser(
+        description='Generate segmentation masks of arteries')
+    parser.add_argument('--csv_path', required=False,
+                        default='B:/percentage_stenosis.csv',
+                        metavar="/path/to/csv/",
+                        help="Directory folder for csv file containing scores (default: B:/percentage_stenosis.csv)")
+    parser.add_argument('--segmented_path', required=False,
+                        default='A:/segmented',
+                        metavar="/path/to/segmented masks",
+                        help="Path to folder containing images and their segmentation maps (default: A:/segmented)")
 
-data = pd.DataFrame(data)
 
-pathString = 'A:/segmented'
-path = Path(pathString)
+    args = parser.parse_args()
+    csv_path = args.csv_path
+    pathString = args.segmented_path
 
-errors = {
-    'lad_p': [],
-    'lad_m': [],
-    'lad_d': [],
-    'lcx2_p': [],
-    'lcx2_m': [],
-    'lcx2_d': [],
-    'diagonal' : [],
-    'lcx1' : []
-}
+    data = pd.read_csv(csv_path)
 
-for video in path.iterdir():
-    row = data.loc[data['keyframe_id'] == float(video.name)].head()
-    stenosisPercentages = {
+    data = pd.DataFrame(data)
+
+    path = Path(pathString)
+
+    errors = {
         'lad_p': [],
         'lad_m': [],
         'lad_d': [],
@@ -55,54 +60,68 @@ for video in path.iterdir():
         'diagonal' : [],
         'lcx1' : []
     }
-    gtPercentages = {
-        'lad_p': None,
-        'lad_m': None,
-        'lad_d': None,
-        'lcx2_p': None,
-        'lcx2_m': None,
-        'lcx2_d': None,
-        'diagonal' : None,
-        'lcx1' : None
-    }
-    if len(row) > 0:
-        row = row.iloc[0]
-    else:
-        continue
-        # print(row)
-    valid_arteries = []
-    valid_segments = []
-    for index, value in row.items():
-        # print(value)
-        if not math.isnan(value) and index != 'keyframe_id':
-            artery = index.split('_')[0]
-            if artery not in valid_arteries:
-                valid_arteries.append(artery)
-            valid_segments.append(index)
-            gtPercentages[index] = value
 
-    for keyframe in video.iterdir():
-        for artery in valid_arteries:
-            filename = keyframe.name + '_' + artery
-            # folderDirectory = pathString
-            if os.path.exists(f"{pathString}/{filename.split('_')[0]}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}/{filename}bin_mask.png"):
-                _, scores = getScore(filename, folderDirectory=pathString, show=False, save=True)
-                # print(f'{filename}: ' ,scores)
-                if scores != None and len(scores) > 0:
-                    for key, score in scores.items():
-                        segmentName = artery + '_' + key
-                        if artery == 'lcx1' or artery == 'diagonal':
-                            segmentName = artery
-                        if segmentName in valid_segments:
-                            stenosisPercentages[segmentName].append(score)
-    
-    averagePerSegment(stenosisPercentages)
-    print(f'{video.name}: raw percentages', stenosisPercentages)
-    calculateErrors(stenosisPercentages, gtPercentages, errors)
+    for video in path.iterdir():
+        row = data.loc[data['keyframe_id'] == float(video.name)].head()
+        stenosisPercentages = {
+            'lad_p': [],
+            'lad_m': [],
+            'lad_d': [],
+            'lcx2_p': [],
+            'lcx2_m': [],
+            'lcx2_d': [],
+            'diagonal' : [],
+            'lcx1' : []
+        }
+        gtPercentages = {
+            'lad_p': None,
+            'lad_m': None,
+            'lad_d': None,
+            'lcx2_p': None,
+            'lcx2_m': None,
+            'lcx2_d': None,
+            'diagonal' : None,
+            'lcx1' : None
+        }
+        if len(row) > 0:
+            row = row.iloc[0]
+        else:
+            continue
+            # print(row)
+        valid_arteries = []
+        valid_segments = []
+        for index, value in row.items():
+            # print(value)
+            if not math.isnan(value) and index != 'keyframe_id':
+                artery = index.split('_')[0]
+                if artery not in valid_arteries:
+                    valid_arteries.append(artery)
+                valid_segments.append(index)
+                gtPercentages[index] = value
 
-print('raw errors: ', errors)
-averagePerSegment(errors)
-print('mean errors: ', errors)
+        for keyframe in video.iterdir():
+            for artery in valid_arteries:
+                filename = keyframe.name + '_' + artery
+                # folderDirectory = pathString
+                if os.path.exists(f"{pathString}/{filename.split('_')[0]}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}/{filename}bin_mask.png"):
+                    _, scores = getScore(filename, folderDirectory=pathString, show=False, save=True)
+                    # print(f'{filename}: ' ,scores)
+                    if scores != None and len(scores) > 0:
+                        print('processed: ', filename)
+                        for key, score in scores.items():
+                            segmentName = artery + '_' + key
+                            if artery == 'lcx1' or artery == 'diagonal':
+                                segmentName = artery
+                            if segmentName in valid_segments:
+                                stenosisPercentages[segmentName].append(score)
+        
+        averagePerSegment(stenosisPercentages)
+        print(f'{video.name}: raw percentages', stenosisPercentages)
+        calculateErrors(stenosisPercentages, gtPercentages, errors)
+
+    print('raw errors: ', errors)
+    averagePerSegment(errors)
+    print('mean errors: ', errors)
 
 
 """
