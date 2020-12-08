@@ -268,8 +268,8 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
   all_pts = np.flip(all_pts, 1)
 
   im0 = cv2.imread(f'{pathPrefix}/{filename}bin_mask.png')
-  imDisplay = cv2.imread(f'{pathPrefix}/{filename}segmented_threshold_binary.png')
-  imSegmented = cv2.cvtColor(imDisplay, cv2.COLOR_BGR2GRAY)
+  imSegmented = cv2.imread(f'{pathPrefix}/{filename}segmented_threshold_binary.png', 0)
+  imDisplay = cv2.imread(f'{pathPrefix}/{filename}_original.png')
 
   widths, coordsList = widthAnalysis(all_pts, imSegmented, 4, show=False, draw_im0=imSegmented.copy())
 
@@ -321,7 +321,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   return score, percentages
 
-# score, percentages = getScore('1578_046_lad', folderDirectory='A:/segmented/', show=True, save=False)
+# score, percentages = getScore('1367_35_lad', folderDirectory='A:/segmented/', show=True, save=False)
 # print(score)
 # print(percentages)
 

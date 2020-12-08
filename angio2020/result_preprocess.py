@@ -41,7 +41,7 @@ def upContrast(img):
 
 def hessianFiltering(image, fileprefix):
     # img must be read with skimg
-    image_f = hessian(image, sigmas=[1], black_ridges=False)
+    image_f = hessian(image, sigmas=[1, 1.5], black_ridges=False)
     final_image = np.multiply(image_f, image).astype(np.uint8)
     imageio.imwrite(f'{fileprefix}_hessian_filtered.png', final_image)
     image = cv2.imread(f'{fileprefix}_hessian_filtered.png', 0)
@@ -162,6 +162,7 @@ def makeSegmentations(data_path, subset, save_path, hess=False):
                     kernel = np.ones((2,2),np.uint8)
                     segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=4)
                     segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
+
                 segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
 
                 # save
@@ -170,6 +171,7 @@ def makeSegmentations(data_path, subset, save_path, hess=False):
                 # imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_blur.png',blur)
                 imageio.imwrite(filePrefix + 'segmented_threshold_binary.png', segmented_binary)
                 imageio.imwrite(filePrefix + 'segmented_threshold.png', segmented_thresh)
+                imageio.imwrite(filePrefix + '_original.png', originalImage)
                 # print(f.name.split('.')[0] + ' area percentage: ' + str(percentage))
                 print(f'processed: {f.name}')
 
