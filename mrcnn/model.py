@@ -2845,7 +2845,6 @@ def mold_image(images, config):
     """
     image = images.astype(np.float32) - config.MEAN_PIXEL
     image /= 255
-    print(np.amax(image))
     return image
 
 
