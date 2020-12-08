@@ -103,7 +103,7 @@ if __name__ == "__main__":
             for artery in valid_arteries:
                 filename = keyframe.name + '_' + artery
                 # folderDirectory = pathString
-                if os.path.exists(f"{pathString}/{filename.split('_')[0]}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}/{filename}bin_mask.png"):
+                if os.path.exists(f"{pathString}/{filename.split('_')[0]}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}/{filename}_bin_mask.png"):
                     _, scores = getScore(filename, folderDirectory=pathString, show=False, save=True)
                     # print(f'{filename}: ' ,scores)
                     if scores != None and len(scores) > 0:
