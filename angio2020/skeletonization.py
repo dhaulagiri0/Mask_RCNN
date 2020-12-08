@@ -273,7 +273,8 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   im0 = cv2.imread(f'{pathPrefix}/{filename}_bin_mask.png')
   imSegmented = cv2.imread(f'{pathPrefix}/{filename}_segmented_threshold_binary.png', 0)
-  imDisplay = cv2.imread(f'{pathPrefix}/{filename}_original.png')
+  imDisplay = cv2.imread(f"{pathPrefix}/{filename.split('_')[0] + '_' + filename.split('_')[1]}_original.png")
+  # print(f"{pathPrefix}/{filename.split('_')[0] + '_' + filename.split('_')[1]}_original.png")
 
   widths, coordsList = widthAnalysis(all_pts, imSegmented, 4, show=False, draw_im0=imSegmented.copy())
 
