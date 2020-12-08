@@ -128,7 +128,7 @@ class AngioConfig(Config):
 
     IMAGE_CHANNEL_COUNT = 1
 
-    MEAN_PIXEL = np.array([129.8])
+    MEAN_PIXEL = np.array([0])
 
     NUM_CLASSES = 1 + 5  # Background + rest
 
@@ -326,7 +326,7 @@ if __name__ == '__main__':
 
         print("Fine tune 3+")
         model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE * 3 / 100,
+                    learning_rate=config.LEARNING_RATE / 100,
                     epochs=120,
                     layers='3+',
                     augmentation=augmentation)
@@ -335,7 +335,7 @@ if __name__ == '__main__':
         # Finetune all layers
         print("Fine tune all layers")
         model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE / 100,
+                    learning_rate=config.LEARNING_RATE / 300,
                     epochs=160,
                     layers='all',
                     augmentation=augmentation)
