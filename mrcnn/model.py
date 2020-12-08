@@ -2844,11 +2844,14 @@ def mold_image(images, config):
     colors in RGB order.
     """
     image = images.astype(np.float32) - config.MEAN_PIXEL
+    image /= 255
+    print(np.amax(image))
     return image
 
 
 def unmold_image(normalized_images, config):
     """Takes a image normalized with mold() and returns the original."""
+    normalized_images = normalized_images * 255
     return (normalized_images + config.MEAN_PIXEL).astype(np.uint8)
 
 

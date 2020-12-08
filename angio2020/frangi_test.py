@@ -24,7 +24,7 @@ from result_preprocess import upContrast
 #     """Return the original image, ignoring any kwargs."""
 #     return image
 
-dataPath = 'C:/Users/damo/OneDrive/Documents/angiodata_new'
+dataPath = 'D:/'
 path = Path(dataPath)
 
 for subset in path.iterdir():
@@ -35,12 +35,14 @@ for subset in path.iterdir():
         if not item.is_dir():
             # item is a image
             imageName = item.name
-            image = cv2.imread(dataPath + '/' + subset.name +'/' + item.name)
-            labImage = upContrast(image)
-            processedImage = cv2.cvtColor(labImage, cv2.COLOR_LAB2BGR)
-            filtered = frangi(cv2.cvtColor(processedImage, cv2.COLOR_BGR2GRAY), beta=1.0, gamma=0.1)
-            filtered = img_as_ubyte(filtered)
-            skimage.io.imsave(dataPath + '/' + subset.name +'_new/' + item.name, filtered)
+            image = cv2.imread(dataPath + '/' + subset.name +'/' + item.name, 0)
+            meanPixel = np.average(image)
+            print(meanPixel)
+            # labImage = upContrast(image)
+            # processedImage = cv2.cvtColor(labImage, cv2.COLOR_LAB2BGR)
+            # filtered = frangi(cv2.cvtColor(processedImage, cv2.COLOR_BGR2GRAY), beta=1.0, gamma=0.1)
+            # filtered = img_as_ubyte(filtered)
+            # skimage.io.imsave(dataPath + '/' + subset.name +'_new/' + item.name, filtered)
 # plt.imshow(results[0])
 # plt.show
 
