@@ -24,27 +24,27 @@ from result_preprocess import upContrast
 #     """Return the original image, ignoring any kwargs."""
 #     return image
 
-dataPath = 'D:/'
-path = Path(dataPath)
 
-for subset in path.iterdir():
-    print(subset.name)
-    if not subset.name in ['train', 'val']: continue
-    for item in subset.iterdir():
-        print(item.name)
-        if not item.is_dir():
-            # item is a image
-            imageName = item.name
-            image = cv2.imread(dataPath + '/' + subset.name +'/' + item.name, 0)
-            meanPixel = np.average(image)
-            print(meanPixel)
-            # labImage = upContrast(image)
-            # processedImage = cv2.cvtColor(labImage, cv2.COLOR_LAB2BGR)
-            # filtered = frangi(cv2.cvtColor(processedImage, cv2.COLOR_BGR2GRAY), beta=1.0, gamma=0.1)
-            # filtered = img_as_ubyte(filtered)
-            # skimage.io.imsave(dataPath + '/' + subset.name +'_new/' + item.name, filtered)
-# plt.imshow(results[0])
-# plt.show
+def alternativeSegmentationMethod():
+    originalImage = cv2.imread('A:/segmented/1367/1367_35/1367_35_diagonal_original.png')
+
+
+def generateFrangiData(dataPath):
+    path = Path(dataPath)
+    for subset in path.iterdir():
+        print(subset.name)
+        if not subset.name in ['train', 'val']: continue
+        for item in subset.iterdir():
+            print(item.name)
+            if not item.is_dir():
+                # item is a image
+                imageName = item.name
+                image = cv2.imread(dataPath + '/' + subset.name +'/' + item.name, 0)
+                labImage = upContrast(image)
+                processedImage = cv2.cvtColor(labImage, cv2.COLOR_LAB2BGR)
+                filtered = frangi(cv2.cvtColor(processedImage, cv2.COLOR_BGR2GRAY), beta=1.0, gamma=0.1)
+                filtered = img_as_ubyte(filtered)
+                skimage.io.imsave(dataPath + '/' + subset.name +'_new/' + item.name, filtered)
 
 # image_f = hessian(image, sigmas=[1, 1.5], sca black_ridges=False)
 

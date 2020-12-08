@@ -3,8 +3,9 @@ import numpy as np
 import matplotlib.cm as cm
 from matplotlib import pyplot as plt
 from pycocotools import mask as maskUtils
-from skimage.filters import hessian
+from skimage.filters import hessian, frangi
 from pathlib import Path
+from skimage import img_as_ubyte
 import json
 import imageio
 from PIL import Image
@@ -36,7 +37,7 @@ def upContrast(img):
     limg = cv2.merge((cl,a,b))
 
     # Converting image from LAB Color model to RGB model
-    lab = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
+    lab = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
     return lab
 
 def hessianFiltering(image, fileprefix):
@@ -84,7 +85,12 @@ def otsu(image, is_normalized=True, is_reduce_noise=False):
     threshold = bin_mids[:-1][index_of_max_val]
     return threshold
 
-def makeSegmentations(data_path, subset, save_path, hess=False):
+def applyFrangi(originalImage):
+    filtered = frangi(originalImage, beta=1.0, gamma=0.1)
+    filtered = img_as_ubyte(filtered)
+    return filtered
+
+def makeSegmentations(data_path, subset, save_path, mode='otsu'):
     p = Path(data_path)
     # navigates the items found in data folder
     for item in p.iterdir():
@@ -110,14 +116,24 @@ def makeSegmentations(data_path, subset, save_path, hess=False):
                     os.mkdir(f"{save_path}/{image_id.split('_')[0]}")
                 if not os.path.exists(f"{save_path}/{image_id.split('_')[0]}/{image_id}"):
                     os.mkdir(f"{save_path}/{image_id.split('_')[0]}/{image_id}")
-
-                originalImage = cv2.imread(data_path + '/png/' + image_id + '.png')
+                
+                if mode == 'frangi':
+                    originalImage = cv2.imread(data_path + image_id + '.jpeg')
+                    print(data_path + image_id + '.jpeg')
+                else:
+                    originalImage = cv2.imread(data_path + '/png/' + image_id + '.png')
                 upCon = upContrast(originalImage.copy())
-                upCon = cv2.cvtColor(upCon, cv2.COLOR_RGB2GRAY)
+                upCon = cv2.cvtColor(upCon, cv2.COLOR_BGR2GRAY)
+                if mode == 'frangi':
+                    upCon = applyFrangi(upCon)
 
                 # isolate masked region
                 segmented = cv2.bitwise_and(upCon, upCon, mask=binMask)
                 segmented_v = segmented
+
+                if mode == 'frangi':
+                    plt.imshow(segmented, cmap='gray')
+                    plt.show()
 
                 # find sum of pixel value
                 sumPx = np.sum(segmented)
@@ -129,9 +145,9 @@ def makeSegmentations(data_path, subset, save_path, hess=False):
                 meanPx = sumPx / occ
 
 
-                if hess:
+                if mode == 'hess':
                     segmented_thresh = hessianFiltering(segmented, filePrefix)
-                else:
+                elif mode == 'otsu':
                     # Otsu Thresholding
                     # get only non-zero pixel values to select otsu threshold
                     nonzero = np.array(segmented[segmented > 0])
@@ -139,39 +155,48 @@ def makeSegmentations(data_path, subset, save_path, hess=False):
 
                     # threshold segmented image by otsu value
                     ret, segmented_thresh = cv2.threshold(segmented , otsu_thresh, 0, cv2.THRESH_TOZERO_INV)
+                else:
+                    # threshold segmented image turn everything into white or black
+                    ret, segmented_binary = cv2.threshold(segmented , 35, 255, cv2.THRESH_BINARY)
+                    print('simple thresh')
 
                 # threshold segmented image by mean
                 # ret, segmented_thresh = cv2.threshold(segmented , meanPx*1.2, 0, cv2.THRESH_TOZERO_INV)
 
-                im_floodfill = segmented_thresh.copy()
-                h, w = segmented_thresh.shape[:2]
-                mask = np.zeros((h+2, w+2), np.uint8)
-                cv2.floodFill(im_floodfill, mask, (0,0), 255)
-                im_floodfill_inv = cv2.bitwise_not(im_floodfill)
-                segmented_binary = segmented_thresh | im_floodfill_inv
+                if mode != 'frangi':
+                    im_floodfill = segmented_thresh.copy()
+                    h, w = segmented_thresh.shape[:2]
+                    mask = np.zeros((h+2, w+2), np.uint8)
+                    cv2.floodFill(im_floodfill, mask, (0,0), 255)
+                    im_floodfill_inv = cv2.bitwise_not(im_floodfill)
+                    segmented_binary = segmented_thresh | im_floodfill_inv
 
-                # # binary map
-                # ret, segmented_binary = cv2.threshold(segmented_thresh, 1, 255, cv2.THRESH_BINARY )
+                    # # binary map
+                    # ret, segmented_binary = cv2.threshold(segmented_thresh, 1, 255, cv2.THRESH_BINARY )
 
-                # morphology opening and closing
-                segmented_binary = cv2.resize(segmented_binary, (segmented_binary.shape[0]*2, segmented_binary.shape[1]*2), interpolation=cv2.INTER_AREA)
-                if hess:
-                    kernel = np.ones((4,4),np.uint8)
-                    segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
-                else:
-                    kernel = np.ones((2,2),np.uint8)
-                    segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=4)
-                    segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
+                    # morphology opening and closing
+                    segmented_binary = cv2.resize(segmented_binary, (segmented_binary.shape[0]*2, segmented_binary.shape[1]*2), interpolation=cv2.INTER_AREA)
+                    if mode == 'hess':
+                        kernel = np.ones((4,4),np.uint8)
+                        segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
+                    else:
+                        kernel = np.ones((2,2),np.uint8)
+                        segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=4)
+                        segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
 
-                segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
+                    segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
 
                 # save
-                imageio.imwrite(filePrefix + '_bin_mask.png', binMask)
-                imageio.imwrite(filePrefix + '_segmented.png', segmented_v)
-                # imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_blur.png',blur)
-                imageio.imwrite(filePrefix + '_segmented_threshold_binary.png', segmented_binary)
-                imageio.imwrite(filePrefix + '_segmented_threshold.png', segmented_thresh)
-                imageio.imwrite(f"{save_path}/{image_id.split('_')[0]}/{image_id}/{image_id}" + '_original.png', originalImage)
+                if mode != 'frangi':
+                    imageio.imwrite(filePrefix + '_bin_mask.png', binMask)
+                    imageio.imwrite(filePrefix + '_segmented.png', segmented_v)
+                    # imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_blur.png',blur)
+                    imageio.imwrite(filePrefix + '_segmented_threshold_binary.png', segmented_binary)
+                    imageio.imwrite(filePrefix + '_segmented_threshold.png', segmented_thresh)
+                    imageio.imwrite(f"{save_path}/{image_id.split('_')[0]}/{image_id}/{image_id}" + '_original.png', originalImage)
+                else:
+                    plt.imshow(segmented_binary, cmap='gray')
+                    plt.show()
                 # print(f.name.split('.')[0] + ' area percentage: ' + str(percentage))
                 print(f'processed: {f.name}')
 
@@ -193,7 +218,7 @@ if __name__ == "__main__":
     parser.add_argument('--mode', required=False,
                     default='otsu',
                     metavar="bool",
-                    help="thresholding mode to use: hess or otsu (default)")
+                    help="thresholding mode to use: hess, frangi or otsu (default)")
 
 
     args = parser.parse_args()
@@ -201,7 +226,6 @@ if __name__ == "__main__":
     subsetPath = args.subset_folder
     subset = subsetPath.split('/')[-1]
     mode = args.mode
-    if mode == 'hess':
-        makeSegmentations(subsetPath, subset, destPath, hess=True)
-    else:
-        makeSegmentations(subsetPath, subset, destPath, hess=False)
+
+    makeSegmentations(subsetPath, subset, destPath, mode=mode)
+
