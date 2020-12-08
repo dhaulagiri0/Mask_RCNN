@@ -204,6 +204,10 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsL
       # significant lesion
       score += factor * 2
       cv2.circle(img, coordsList[peak], int(average_width*1.5), (255, 0, 0), 1)
+    elif 0.3 * localWidth < width < 0.5 * localWidth:
+      cv2.circle(img, coordsList[peak], int(average_width*1.5), (128, 0, 128), 1)
+    elif 0 * localWidth < width < 0.3 * localWidth:
+      cv2.circle(img, coordsList[peak], int(average_width*1.5), (255, 255, 0), 1)
     else:
       cv2.circle(img, coordsList[peak], int(average_width*1.5), (0, 255, 0), 1)
     
@@ -278,7 +282,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
   # sanity check in case there are multiple skeletons
   if len(widths) > window_size:
     # smoothing width graph
-    widths_s = savgol_filter(widths, window_size, 3)
+    widths_s = savgol_filter(widths, window_size, 1)
   else:
     return None, None
 
@@ -321,9 +325,9 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   return score, percentages
 
-score, percentages = getScore('1367_35_lad', folderDirectory='A:/segmented/', show=True, save=False)
-print(score)
-print(percentages)
+# score, percentages = getScore('1367_35_lad', folderDirectory='A:/segmented/', show=True, save=False)
+# print(score)
+# print(percentages)
 
 # legacy code
 # if __name__ == "__main__":
