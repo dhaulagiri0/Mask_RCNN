@@ -166,11 +166,11 @@ def makeSegmentations(data_path, subset, save_path, hess=False):
                 segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
 
                 # save
-                imageio.imwrite(filePrefix + 'bin_mask.png', binMask)
-                imageio.imwrite(filePrefix + 'segmented.png', segmented_v)
+                imageio.imwrite(filePrefix + '_bin_mask.png', binMask)
+                imageio.imwrite(filePrefix + '_segmented.png', segmented_v)
                 # imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_blur.png',blur)
-                imageio.imwrite(filePrefix + 'segmented_threshold_binary.png', segmented_binary)
-                imageio.imwrite(filePrefix + 'segmented_threshold.png', segmented_thresh)
+                imageio.imwrite(filePrefix + '_segmented_threshold_binary.png', segmented_binary)
+                imageio.imwrite(filePrefix + '_segmented_threshold.png', segmented_thresh)
                 imageio.imwrite(filePrefix + '_original.png', originalImage)
                 # print(f.name.split('.')[0] + ' area percentage: ' + str(percentage))
                 print(f'processed: {f.name}')
