@@ -41,6 +41,7 @@ def getPolyImage(points_dict, shape=(512, 512)):
 def scoring(pathString):
     path = Path(pathString)
     scores = []
+    accuracies = []
     # check through segmentation map directory
     for video in path.iterdir():
         print(video.name)
@@ -61,10 +62,14 @@ def scoring(pathString):
                             print('-- ', image.name)
                             y_true = np.int32(getPolyImage(points_dict))
                             values, f1 = f1Score(y_true, y_pred)
+                            tn, fp, fn, tp = values
+                            accuracy = (tp + tn) / (tp + tn + fp + fn)
+                            accuracies.append(accuracy)
                             scores.append(f1)
 
-    mean = np.average(np.array(scores))
-    return mean
+    f1Mean = np.average(np.array(scores))
+    accuracyMean = np.average(np.array(accuracies))
+    return f1Mean, accuracyMean
                         
 
 if __name__ == "__main__":
@@ -81,8 +86,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     data_path = args.data_path
 
-    f1Mean = scoring(data_path)
+    f1Mean, accuracyMean = scoring(data_path)
     print('mean f1 score: ', f1Mean)
+    print('mean accuracy: ', accuracyMean)
 
 
 # gt = cv2.imread('A:/segmented/1367/1367_35/1367_35_diagonalbin_mask.png', 0)

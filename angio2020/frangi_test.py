@@ -18,34 +18,29 @@ from skimage.segmentation import flood, flood_fill
 from skimage import img_as_ubyte
 import sys
 from scipy import ndimage as ndi
-
-def power(image, kernel):
-    # Normalize images for better comparison.
-    image = (image - image.mean()) / image.std()
-    return np.sqrt(ndi.convolve(image, np.real(kernel), mode='wrap')**2 +
-                   ndi.convolve(image, np.imag(kernel), mode='wrap')**2)
-
-kernels = []
-for theta in range(36):
-    theta = theta / 36. * np.pi
-    for sigma in (1, 3):
-        for frequency in (0.05, 0.25):
-            kernel = np.real(gabor_kernel(frequency, theta=theta, bandwidth=0.25, sigma_x=sigma, sigma_y=sigma))
-            kernels.append(kernel)
-
+from result_preprocess import upContrast
 
 # def identity(image, **kwargs):
 #     """Return the original image, ignoring any kwargs."""
 #     return image
 
-image = skimage.io.imread('A:/segmented/1367/1367_35/1367_35_diagonalsegmented.png')
-results = [power(image, kernel) for kernel in kernels]
-result = results[0]
-for i in range(512):
-    for j in range(512):
-        result[i][j] = np.amax([result_[i][j] for result_ in results])
+dataPath = 'C:/Users/damo/OneDrive/Documents/angiodata_new'
+path = Path(dataPath)
 
-imageio.imwrite('A:/test_gabor.png', result)
+for subset in path.iterdir():
+    print(subset.name)
+    if not subset.name in ['train', 'val']: continue
+    for item in subset.iterdir():
+        print(item.name)
+        if not item.is_dir():
+            # item is a image
+            imageName = item.name
+            image = cv2.imread(dataPath + '/' + subset.name +'/' + item.name)
+            labImage = upContrast(image)
+            processedImage = cv2.cvtColor(labImage, cv2.COLOR_LAB2BGR)
+            filtered = frangi(cv2.cvtColor(processedImage, cv2.COLOR_BGR2GRAY), beta=1.0, gamma=0.1)
+            filtered = img_as_ubyte(filtered)
+            skimage.io.imsave(dataPath + '/' + subset.name +'_new/' + item.name, filtered)
 # plt.imshow(results[0])
 # plt.show
 

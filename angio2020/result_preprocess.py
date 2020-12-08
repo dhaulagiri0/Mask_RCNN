@@ -171,7 +171,7 @@ def makeSegmentations(data_path, subset, save_path, hess=False):
                 # imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_blur.png',blur)
                 imageio.imwrite(filePrefix + '_segmented_threshold_binary.png', segmented_binary)
                 imageio.imwrite(filePrefix + '_segmented_threshold.png', segmented_thresh)
-                imageio.imwrite(filePrefix + '_original.png', originalImage)
+                imageio.imwrite(f"{save_path}/{image_id.split('_')[0]}/{image_id}/{image_id}" + '_original.png', originalImage)
                 # print(f.name.split('.')[0] + ' area percentage: ' + str(percentage))
                 print(f'processed: {f.name}')
 
