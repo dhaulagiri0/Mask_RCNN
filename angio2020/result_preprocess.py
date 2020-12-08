@@ -119,7 +119,6 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu'):
                 
                 if mode == 'frangi':
                     originalImage = cv2.imread(data_path + image_id + '.jpeg')
-                    print(data_path + image_id + '.jpeg')
                 else:
                     originalImage = cv2.imread(data_path + '/png/' + image_id + '.png')
                 upCon = upContrast(originalImage.copy())
@@ -130,10 +129,6 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu'):
                 # isolate masked region
                 segmented = cv2.bitwise_and(upCon, upCon, mask=binMask)
                 segmented_v = segmented
-
-                if mode == 'frangi':
-                    plt.imshow(segmented, cmap='gray')
-                    plt.show()
 
                 # find sum of pixel value
                 sumPx = np.sum(segmented)
@@ -157,8 +152,7 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu'):
                     ret, segmented_thresh = cv2.threshold(segmented , otsu_thresh, 0, cv2.THRESH_TOZERO_INV)
                 else:
                     # threshold segmented image turn everything into white or black
-                    ret, segmented_binary = cv2.threshold(segmented , 35, 255, cv2.THRESH_BINARY)
-                    print('simple thresh')
+                    ret, segmented_binary = cv2.threshold(segmented , meanPx * 0.3 , 255, cv2.THRESH_BINARY)
 
                 # threshold segmented image by mean
                 # ret, segmented_thresh = cv2.threshold(segmented , meanPx*1.2, 0, cv2.THRESH_TOZERO_INV)
@@ -187,16 +181,13 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu'):
                     segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
 
                 # save
+                imageio.imwrite(filePrefix + '_bin_mask.png', binMask)
+                imageio.imwrite(filePrefix + '_segmented.png', segmented_v)
+                # imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_blur.png',blur)
+                imageio.imwrite(filePrefix + '_segmented_threshold_binary.png', segmented_binary)
                 if mode != 'frangi':
-                    imageio.imwrite(filePrefix + '_bin_mask.png', binMask)
-                    imageio.imwrite(filePrefix + '_segmented.png', segmented_v)
-                    # imageio.imwrite(save_path + f.name.split('.')[0] + 'segmented_blur.png',blur)
-                    imageio.imwrite(filePrefix + '_segmented_threshold_binary.png', segmented_binary)
                     imageio.imwrite(filePrefix + '_segmented_threshold.png', segmented_thresh)
-                    imageio.imwrite(f"{save_path}/{image_id.split('_')[0]}/{image_id}/{image_id}" + '_original.png', originalImage)
-                else:
-                    plt.imshow(segmented_binary, cmap='gray')
-                    plt.show()
+                imageio.imwrite(f"{save_path}/{image_id.split('_')[0]}/{image_id}/{image_id}" + '_original.png', originalImage)
                 # print(f.name.split('.')[0] + ' area percentage: ' + str(percentage))
                 print(f'processed: {f.name}')
 
