@@ -302,7 +302,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
   # sanity check in case there are multiple skeletons
   if len(widths) > window_size:
     # smoothing width graph
-    widths_s = savgol_filter(widths, window_size, 1)
+    widths_s = savgol_filter(widths, window_size, 3)
   else:
     return None, None, None
 

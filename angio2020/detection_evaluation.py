@@ -134,7 +134,7 @@ if __name__ == "__main__":
                     filename = keyframe.name + '_' + artery
                     jsonPath = f"{pathString.split('/')[0]}/bbox_json/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json"
                     if os.path.exists(jsonPath):
-                        _, scores, boxes = getScore(filename, folderDirectory=pathString, show=False, save=False)
+                        _, scores, boxes = getScore(filename, folderDirectory=pathString, show=False, save=True)
                         print(boxes)
                         if boxes != None:
                             results = processBbox(f"{pathString.split('/')[0]}/bbox_json/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json", boxes, artery)
