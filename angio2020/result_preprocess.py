@@ -30,7 +30,7 @@ def upContrast(img):
     l, a, b = cv2.split(lab)
 
     # Applying CLAHE to L-channel
-    clahe = cv2.createCLAHE(clipLimit=7.0, tileGridSize=(5,5))
+    clahe = cv2.createCLAHE(clipLimit=12.0, tileGridSize=(3,3))
     cl = clahe.apply(l)
 
     # Merge the CLAHE enhanced L-channel with the a and b channel
@@ -120,7 +120,7 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu'):
                 if mode == 'frangi':
                     originalImage = cv2.imread(data_path + image_id + '.jpeg')
                 else:
-                    originalImage = cv2.imread(data_path + '/png/' + image_id + '.png')
+                    originalImage = cv2.imread(data_path + image_id + '.jpeg')
                 upCon = upContrast(originalImage.copy())
                 upCon = cv2.cvtColor(upCon, cv2.COLOR_BGR2GRAY)
                 if mode == 'frangi':
@@ -152,7 +152,7 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu'):
                     ret, segmented_thresh = cv2.threshold(segmented , otsu_thresh, 0, cv2.THRESH_TOZERO_INV)
                 else:
                     # threshold segmented image turn everything into white or black
-                    ret, segmented_binary = cv2.threshold(segmented , meanPx * 0.3 , 255, cv2.THRESH_BINARY)
+                    ret, segmented_binary = cv2.threshold(segmented , meanPx * 0.4 , 255, cv2.THRESH_BINARY)
 
                 # threshold segmented image by mean
                 # ret, segmented_thresh = cv2.threshold(segmented , meanPx*1.2, 0, cv2.THRESH_TOZERO_INV)

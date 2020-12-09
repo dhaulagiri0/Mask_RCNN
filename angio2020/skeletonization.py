@@ -227,8 +227,10 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsL
       boxList.append(boxCoords)
     elif width < 0.8 * localWidth:
       c = (255, 255, 0)
+      boxList.append(boxCoords)
     else:
       c = (0, 0, 255)
+      boxList.append(boxCoords)
 
     cv2.rectangle(img, (boxCoords['x1'], boxCoords['y1']), (boxCoords['x2'], boxCoords['y2']), c, 1)
     
