@@ -317,7 +317,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
   average_width = np.average(widths) 
 
   # locate dips in widths and identify them as regions of stenosis
-  peaks, _ = find_peaks(np.negative(widths_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
+  peaks, _ = find_peaks(np.negative(widths_s), distance=5, prominence=(average_width*0.4, None))
 
   # determine length of each detected stenosis
   stenosis_lengths_ = peak_widths(np.negative(widths_s), peaks, rel_height=0.7)
@@ -354,7 +354,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   return score, percentages, boxList
 
-# score, percentages, bboxList = getScore('1367_43_lcx1', folderDirectory='A:/segmented_manual/', show=True, save=False)
+# score, percentages, bboxList = getScore('3005_34_lcx2', folderDirectory='F:/segmented_otsu/', show=True, save=False)
 # print(score)
 # print(percentages)
 
