@@ -4,6 +4,7 @@ from pathlib import Path
 import math
 from skeletonization import getScore
 import os
+        
 
 def bin(percentages):
     data = np.random.random(100)
@@ -11,7 +12,7 @@ def bin(percentages):
     digitized = np.digitize(data, bins)
     counts = np.bincount(digitized)
     maxBin = np.argmax(counts)
-    if isinstance(maxBin, numpy.ndarray):
+    if isinstance(maxBin, np.ndarray):
         maxBin = np.amax(maxBin)
         binnedAverage = data[digitized == maxBin].mean()
     else:
@@ -121,7 +122,7 @@ if __name__ == "__main__":
                 filename = keyframe.name + '_' + artery
                 # folderDirectory = pathString
                 if os.path.exists(f"{pathString}/{filename.split('_')[0]}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}/{filename}_bin_mask.png"):
-                    _, scores = getScore(filename, folderDirectory=pathString, show=False, save=True)
+                    _, scores, boxes = getScore(filename, folderDirectory=pathString, show=False, save=True)
                     # print(f'{filename}: ' ,scores)
                     if scores != None and len(scores) > 0:
                         print('processed: ', filename)
@@ -133,7 +134,7 @@ if __name__ == "__main__":
                                 stenosisPercentages[segmentName].append(score)
 
         
-        qthPercentilePerSegment(stenosisPercentages, 50)
+        qthPercentilePerSegment(stenosisPercentages, 80)
         print(f'{video.name}: raw percentages', stenosisPercentages)
         calculateErrors(stenosisPercentages, gtPercentages, errors)
 

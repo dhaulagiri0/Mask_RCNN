@@ -155,6 +155,8 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsL
     'lcx2' : ['p', 'd']
   }
 
+  boxList = []
+
   factors = factors_list[artery_type]
 
   artery_length = len(widths)
@@ -208,6 +210,7 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsL
       stenosis_segments[segment] = percentage
 
     boxCoords = getBoxCoords(coordsList[peak], int(average_width*1.5))
+    boxList.append(boxCoords)
 
     if width == 0:
       # occlusion
@@ -230,7 +233,7 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsL
     if stenosis_length > 20:
       score += 1
     
-  return score, stenosis_segments
+  return score, stenosis_segments, boxList
 
 def traverseSkeleton(start, end, graph, coords):
   # gets all the necessary points on the skeleton in the correct sequence
@@ -313,7 +316,8 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
   stenosis_lengths = stenosis_lengths_[0]
 
   # get syntax score and highest stenosis percentages for each segment of the artery if any
-  score, percentages = scoring(widths_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths, coordsList, imDisplay)
+  # box coords are collated to calculate f1 score later
+  score, percentages, boxList = scoring(widths_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths, coordsList, imDisplay)
 
   # plotting for display purposes
   plt.cla()
@@ -340,7 +344,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
     cv2.imwrite(outPath + '_stenosis_locations.png', imDisplay)
     plt.savefig(outPath + '_width_plot.png')
 
-  return score, percentages
+  return score, percentages, boxList
 
 # score, percentages = getScore('1367_35_lad', folderDirectory='A:/segmented/', show=True, save=False)
 # print(score)
