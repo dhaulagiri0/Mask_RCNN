@@ -254,7 +254,11 @@ def traverseSkeleton(start, end, graph, coords):
       graph[curIndex][prevIndex] = 0
     coordsOrdered.append(curCoord)
     prevIndex = curIndex
-    curIndex = np.nonzero(graph[curIndex])[0][0]
+    nonZero = np.nonzero(graph[curIndex])
+    if len(nonZero[0]) > 0:
+      curIndex = np.nonzero(graph[curIndex])[0][0]
+    else:
+      break
     curCoord = coords[curIndex - 1]
   coordsOrdered.append(end)
   return np.asarray(coordsOrdered)
@@ -295,7 +299,6 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
   all_pts = skeletoniseSkimg(f"{pathPrefix}/{filename}_bin_mask.png")
   all_pts = np.flip(all_pts, 1)
 
-  im0 = cv2.imread(f'{pathPrefix}/{filename}_bin_mask.png')
   imSegmented = cv2.imread(f'{pathPrefix}/{filename}_segmented_threshold_binary.png', 0)
   imDisplay = cv2.imread(f"{pathPrefix}/{filename.split('_')[0] + '_' + filename.split('_')[1]}_original.png")
   # print(f"{pathPrefix}/{filename.split('_')[0] + '_' + filename.split('_')[1]}_original.png")
@@ -311,35 +314,10 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
   else:
     return None, None, None
 
-  segment_widths = []
-  segment_offsets = []
-  # split widths into segments
-  if artery_type == 'lcx2' or artery_type == 'lad':
-    segment_widths.append(widths_s[:int(len(widths_s)/3)])
-    segment_widths.append(widths_s[int(len(widths_s)/3):int(len(widths_s) * 2/3)])
-    segment_widths.append(widths_s[int(len(widths_s) * 2/3):])
-
-    segment_offsets = [0,  int(len(widths)/3), int(len(widths) * 2/3)]
-  else:
-    segment_widths.append(widths_s[:int(len(widths)/2)])
-    segment_widths.append(widths_s[int(len(widths)/2):])
-
-    segment_offsets = [0,  int(len(widths)/2)]
-
-  average_widths = []
-  for segment in segment_widths:
-    average_widths.append(np.average(segment)) 
+  average_width = np.average(widths) 
 
   # locate dips in widths and identify them as regions of stenosis
-  l = []
-  for i in range(len(segment_widths)):
-    segment = segment_widths[i]
-    average_width = average_widths[i]
-    peaks, _ = find_peaks(np.negative(segment), distance=5, prominence=(average_width*0.15, None), width=(1, None))
-    peaks = np.array(peaks) + segment_offsets[i]
-    peaks = peaks.tolist()
-    l += peaks
-  peaks = l
+  peaks, _ = find_peaks(np.negative(widths_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
 
   # determine length of each detected stenosis
   stenosis_lengths_ = peak_widths(np.negative(widths_s), peaks, rel_height=0.7)
@@ -347,7 +325,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   # get syntax score and highest stenosis percentages for each segment of the artery if any
   # box coords are collated to calculate f1 score later
-  score, percentages, boxList = scoring(widths_s, np.array(average_widths).mean(), peaks, artery_type, stenosis_lengths, coordsList, imDisplay)
+  score, percentages, boxList = scoring(widths_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths, coordsList, imDisplay)
 
   # plotting for display purposes
   plt.cla()
@@ -376,7 +354,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   return score, percentages, boxList
 
-# score, percentages, bboxList = getScore('1367_35_lad', folderDirectory='A:/segmented_otsu/', show=True, save=False)
+# score, percentages, bboxList = getScore('1367_43_lcx1', folderDirectory='A:/segmented_manual/', show=True, save=False)
 # print(score)
 # print(percentages)
 
