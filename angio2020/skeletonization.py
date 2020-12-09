@@ -283,11 +283,12 @@ def skeletoniseSkimg(maskFilePath):
 
   return pts.astype(int)
 
-
 def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   pathPrefix = f"{folderDirectory}/{filename.split('_')[0]}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}"
   
+  artery_type = filename.split('_')[-1]
+
   # default should be A:/segmented/
   all_pts = skeletoniseSkimg(f"{pathPrefix}/{filename}_bin_mask.png")
   all_pts = np.flip(all_pts, 1)
@@ -308,10 +309,35 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
   else:
     return None, None, None
 
-  average_width = np.average(widths) 
+  segment_widths = []
+  segment_offsets = []
+  # split widths into segments
+  if artery_type == 'lcx2' or artery_type == 'lad':
+    segment_widths.append(widths_s[:int(len(widths_s)/3)])
+    segment_widths.append(widths_s[int(len(widths_s)/3):int(len(widths_s) * 2/3)])
+    segment_widths.append(widths_s[int(len(widths_s) * 2/3):])
+
+    segment_offsets = [0,  int(len(widths)/3), int(len(widths * 2/3))]
+  else:
+    segment_widths.append(widths_s[:int(len(widths)/2)])
+    segment_widths.append(widths_s[int(len(widths)/2):])
+
+    segment_offsets = [0,  int(len(widths)/2)]
+
+  average_widths = []
+  for segment in segment_widths:
+    average_widths.append(np.average(segment)) 
 
   # locate dips in widths and identify them as regions of stenosis
-  peaks, _ = find_peaks(np.negative(widths_s), distance=5, prominence=(average_width*0.15, None), width=(1, None))
+  l = []
+  for i in range(len(segment_widths)):
+    segment = segment_widths[i]
+    average_width = average_widths[i]
+    peaks, _ = find_peaks(np.negative(segment), distance=5, prominence=(average_width*0.15, None), width=(1, None))
+    peaks = np.array(peaks) + segment_offsets[i]
+    peaks = peaks.tolist()
+    l += peaks
+  peaks = l
 
   # determine length of each detected stenosis
   stenosis_lengths_ = peak_widths(np.negative(widths_s), peaks, rel_height=0.7)
@@ -319,7 +345,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   # get syntax score and highest stenosis percentages for each segment of the artery if any
   # box coords are collated to calculate f1 score later
-  score, percentages, boxList = scoring(widths_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths, coordsList, imDisplay)
+  score, percentages, boxList = scoring(widths_s, np.array(average_widths).mean(), peaks, artery_type, stenosis_lengths, coordsList, imDisplay)
 
   # plotting for display purposes
   plt.cla()
