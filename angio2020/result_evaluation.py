@@ -7,16 +7,15 @@ import os
         
 
 def bin(percentages):
-    data = np.random.random(100)
     bins = np.linspace(0, 1, 10)
-    digitized = np.digitize(data, bins)
+    digitized = np.digitize(percentages, bins)
     counts = np.bincount(digitized)
     maxBin = np.argmax(counts)
     if isinstance(maxBin, np.ndarray):
         maxBin = np.amax(maxBin)
-        binnedAverage = data[digitized == maxBin].mean()
+        binnedAverage = percentages[digitized == maxBin].mean()
     else:
-        binnedAverage = data[digitized == maxBin].mean()
+        binnedAverage = percentages[digitized == maxBin].mean()
     return binnedAverage
 
 

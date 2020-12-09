@@ -66,7 +66,6 @@ def getMetrics(results):
         sn = tp / (tp + fn)
         ppv = tp / (tp + fp)
         f1 = tp / (tp + 0.5*(fp + fn))
-        print(f1)
         return sn, ppv, f1
     return None, None, None
 
@@ -77,7 +76,7 @@ def bboxScore(y_true_list, y_pred, iouThresh):
             return 'tp', i
     return 'fp', None
 
-def processBbox(jsonPath, y_preds, artery, iouThresh = 0.5):
+def processBbox(jsonPath, y_preds, artery, results, iouThresh = 0.5):
     y_true_list = []
     with open(jsonPath) as json_file:
         data = json.load(json_file)
@@ -88,21 +87,16 @@ def processBbox(jsonPath, y_preds, artery, iouThresh = 0.5):
                 y_true_list.append({'x1': topLeft['x'], 'y1': topLeft['y'], 'x2': bottomRight['x'], 'y2': bottomRight['y']})
     
     matched = []
-    results = {
-        'tp' : 0,
-        'tn' : None,
-        'fp' : 0,
-        'fn' : 0
-    }
-
-    for y_pred in y_preds:
-        result, bbox_matched = bboxScore(y_true_list, y_pred, iouThresh)
-        if bbox_matched != None and bbox_matched not in matched:
-            matched.append(bbox_matched)
-        results[result] += 1
+    if len(y_true_list) > 0:
+        for y_pred in y_preds:
+            result, bbox_matched = bboxScore(y_true_list, y_pred, iouThresh)
+            if bbox_matched != None and bbox_matched not in matched:
+                matched.append(bbox_matched)
+            results[result] += 1
+    else:
+        results['fp'] += len(y_preds)
     
-    results['fn'] = len(y_true_list) - len(matched)
-    return results
+    results['fn'] += len(y_true_list) - len(matched)
 
 if __name__ == "__main__":
     import argparse
@@ -121,9 +115,15 @@ if __name__ == "__main__":
     path = Path(pathString)
 
     metricsDict = {
-        'sn': [],
-        'ppv': [],
-        'f1': []
+        'sn': None,
+        'ppv': None,
+        'f1': None
+    }
+
+    results = {
+        'fp': 0,
+        'fn': 0,
+        'tp': 0
     }
 
     for video in path.iterdir():
@@ -137,16 +137,9 @@ if __name__ == "__main__":
                         _, scores, boxes = getScore(filename, folderDirectory=pathString, show=False, save=True)
                         print(boxes)
                         if boxes != None:
-                            results = processBbox(f"{pathString.split('/')[0]}/bbox_json/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json", boxes, artery)
-                            sn, ppv, f1 = getMetrics(results)
-                            if sn != None:
-                                metricsDict['sn'].append(sn)
-                                metricsDict['ppv'].append(ppv)
-                                metricsDict['f1'].append(f1)
+                            processBbox(f"{pathString.split('/')[0]}/bbox_json/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json", boxes, artery, results)
                         print('processed ' + f.name)
     
-    sn_mean = np.average(np.array(metricsDict['sn']))
-    ppv_mean = np.average(np.array(metricsDict['ppv']))
-    f1_mean = np.average(np.array(metricsDict['f1']))
-    print(f'Mean Sensitivity: {sn_mean}, Mean Positive Predictive Rate: {ppv_mean}, Mean F1 Score: {f1_mean}')
+    sn, ppv, f1 = getMetrics(results)
+    print(f'Mean Sensitivity: {sn}, Mean Positive Predictive Rate: {ppv}, Mean F1 Score: {f1}')
 
