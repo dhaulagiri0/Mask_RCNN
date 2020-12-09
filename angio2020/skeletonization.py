@@ -252,7 +252,11 @@ def traverseSkeleton(start, end, graph, coords):
       graph[curIndex][prevIndex] = 0
     coordsOrdered.append(curCoord)
     prevIndex = curIndex
-    curIndex = np.nonzero(graph[curIndex])[0][0]
+    nonZero = np.nonzero(graph[curIndex])
+    if len(nonZero[0]) > 0:
+      curIndex = np.nonzero(graph[curIndex])[0][0]
+    else:
+      break
     curCoord = coords[curIndex - 1]
   coordsOrdered.append(end)
   return np.asarray(coordsOrdered)
@@ -293,7 +297,6 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
   all_pts = skeletoniseSkimg(f"{pathPrefix}/{filename}_bin_mask.png")
   all_pts = np.flip(all_pts, 1)
 
-  im0 = cv2.imread(f'{pathPrefix}/{filename}_bin_mask.png')
   imSegmented = cv2.imread(f'{pathPrefix}/{filename}_segmented_threshold_binary.png', 0)
   imDisplay = cv2.imread(f"{pathPrefix}/{filename.split('_')[0] + '_' + filename.split('_')[1]}_original.png")
   # print(f"{pathPrefix}/{filename.split('_')[0] + '_' + filename.split('_')[1]}_original.png")
@@ -374,7 +377,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   return score, percentages, boxList
 
-# score, percentages, bboxList = getScore('1367_35_lad', folderDirectory='A:/segmented_otsu/', show=True, save=False)
+# score, percentages, bboxList = getScore('1738_47_lcx1', folderDirectory='A:/segmented_manual/', show=True, save=False)
 # print(score)
 # print(percentages)
 
