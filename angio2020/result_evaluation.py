@@ -7,7 +7,8 @@ import os
         
 
 def bin(percentages):
-    bins = np.linspace(0, 1, 10)
+    bins = np.linspace(0, 100, 10)
+    percentages = np.array(percentages)
     digitized = np.digitize(percentages, bins)
     counts = np.bincount(digitized)
     maxBin = np.argmax(counts)
@@ -140,7 +141,8 @@ if __name__ == "__main__":
                                 segmentName = artery
                             if segmentName in valid_segments:
                                 stenosisPercentages[segmentName].append(score)
-
+                break
+            break
         
         qthPercentilePerSegment(stenosisPercentages, 80)
         print(f'{video.name}: raw percentages', stenosisPercentages)
