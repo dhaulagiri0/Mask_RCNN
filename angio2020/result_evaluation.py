@@ -152,6 +152,11 @@ mean errors:  {'lad_p': 51.186405737720996, 'lad_m': 53.68714934018281, 'lad_d':
 """
 
 """
+frangi filters, width * 0.15
+mean errors:  {'lad_p': 63.1463313011622, 'lad_m': 59.2582270226721, 'lad_d': 35.31978554676648, 'lcx2_p': 40.64316755777989, 'lcx2_m': None, 'lcx2_d': 38.09483596997129, 'diagonal': 39.72031926590497, 'lcx1': 30.756827621101557}
+"""
+
+"""
 with precise ptsalongline
 1388: raw percentages {'lad_p': None, 'lad_m': 45.55553041861184, 'lad_d': 20.537392472901853, 'lcx2_p': None, 'lcx2_m': None, 'lcx2_d': None, 'diagonal': None, 'lcx1': None}
 1472: raw percentages {'lad_p': 67.84798434973884, 'lad_m': 29.153827940409982, 'lad_d': None, 'lcx2_p': 78.96524718768373, 'lcx2_m': None, 'lcx2_d': None, 'diagonal': 50.04116259608066, 'lcx1': None}
