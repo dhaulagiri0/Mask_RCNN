@@ -122,10 +122,10 @@ def determineStenosisLocation(peak_position, artery_type, artery_length):
       return 0
 
 def getBoxCoords(centerCoord, length):
-  x1 = centerCoord[0] - length/2
-  y1 = centerCoord[1] - length/2
-  x2 = centerCoord[0] + length/2
-  y2 = centerCoord[1] + length/2
+  x1 = centerCoord[0] - length
+  y1 = centerCoord[1] - length
+  x2 = centerCoord[0] + length
+  y2 = centerCoord[1] + length
   return {
     'x1' : int(x1),
     'y1' : int(y1),
@@ -210,19 +210,21 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsL
       stenosis_segments[segment] = percentage
 
     boxCoords = getBoxCoords(coordsList[peak], int(average_width*1.5))
-    boxList.append(boxCoords)
 
     if width == 0:
       # occlusion
       # plus one for unknown time of formation
       score += factor * 5 + 1
       c = (255, 0, 0)
+      boxList.append(boxCoords)
     elif width < 0.5 * localWidth:
       # significant lesion
       score += factor * 2
       c = (255, 0, 0)
+      boxList.append(boxCoords)
     elif width < 0.7 * localWidth:
       c = (128, 0, 128)
+      boxList.append(boxCoords)
     elif width < 0.8 * localWidth:
       c = (255, 255, 0)
     else:

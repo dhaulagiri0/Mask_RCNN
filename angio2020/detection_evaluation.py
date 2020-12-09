@@ -137,9 +137,10 @@ if __name__ == "__main__":
                         _, scores, boxes = getScore(filename, folderDirectory=pathString, show=False, save=True)
                         print(boxes)
                         if boxes != None:
-                            processBbox(f"{pathString.split('/')[0]}/bbox_json/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json", boxes, artery, results)
+                            processBbox(f"{pathString.split('/')[0]}/bbox_json/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json", boxes, artery, results, iouThresh=0.35)
                         print('processed ' + f.name)
     
+    print(results)
     sn, ppv, f1 = getMetrics(results)
     print(f'Mean Sensitivity: {sn}, Mean Positive Predictive Rate: {ppv}, Mean F1 Score: {f1}')
 
