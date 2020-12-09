@@ -19,7 +19,6 @@ def bin(percentages):
     return binnedAverage
 
 
-# compute average given a dictionary of arrays containing percentages or percentage error
 def qthPercentilePerSegment(percDict, q):
     for segment, percentages in percDict.items():
         sumPercentage = 0
@@ -32,6 +31,16 @@ def qthPercentilePerSegment(percDict, q):
             qthPerc = np.percentile(np.array(percentages), q)
             binnedAverage = bin(percentages)
         percDict[segment] = binnedAverage
+
+def averagePerSegment(percDict):
+    for segment, percentages in percDict.items():
+        sumPercentage = 0
+        average = None
+        if len(percentages) > 0:
+            for percentage in percentages:
+                sumPercentage += percentage
+            average = sumPercentage / len(percentages) 
+        percDict[segment] = average
 
 def calculateErrors(predDict, gtDict, errorsDict):
     for segment, percentage in predDict.items():
