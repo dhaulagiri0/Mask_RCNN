@@ -304,7 +304,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
     # smoothing width graph
     widths_s = savgol_filter(widths, window_size, 1)
   else:
-    return None, None
+    return None, None, None
 
   average_width = np.average(widths) 
 

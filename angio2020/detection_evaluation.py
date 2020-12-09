@@ -62,13 +62,11 @@ def getMetrics(results):
     fp = results['fp']
     fn = results['fn']
 
-    if tp + fn !=0 and tp + fp != 0:
+    if tp + fn !=0 and tp + fp != 0 and tp + 0.5*(fp + fn) != 0:
         sn = tp / (tp + fn)
         ppv = tp / (tp + fp)
-        f1 = 2*sn*ppv / (sn + ppv)
-        # sanity check
-        f1_ = tp / (tp + 0.5(fp + fn))
-        print(f1, f1_)
+        f1 = tp / (tp + 0.5*(fp + fn))
+        print(f1)
         return sn, ppv, f1
     return None, None, None
 
@@ -98,7 +96,7 @@ def processBbox(jsonPath, y_preds, artery, iouThresh = 0.5):
     }
 
     for y_pred in y_preds:
-        result, bbox_matched = bboxScore(y_true_list, y_preds, iouThresh)
+        result, bbox_matched = bboxScore(y_true_list, y_pred, iouThresh)
         if bbox_matched != None and bbox_matched not in matched:
             matched.append(bbox_matched)
         results[result] += 1
@@ -137,12 +135,15 @@ if __name__ == "__main__":
                     jsonPath = f"{pathString.split('/')[0]}/bbox_json/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json"
                     if os.path.exists(jsonPath):
                         _, scores, boxes = getScore(filename, folderDirectory=pathString, show=False, save=False)
-                        results = processBbox(f"{pathString.split('/')[0]}/bbox_json/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json", boxes, artery)
-                        sn, ppv, f1 = getMetrics(results)
-                        if sn != None:
-                            metricsDict['sn'].append(sn)
-                            metricsDict['ppv'].append(ppv)
-                            metricsDict['f1'].append(f1)
+                        print(boxes)
+                        if boxes != None:
+                            results = processBbox(f"{pathString.split('/')[0]}/bbox_json/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json", boxes, artery)
+                            sn, ppv, f1 = getMetrics(results)
+                            if sn != None:
+                                metricsDict['sn'].append(sn)
+                                metricsDict['ppv'].append(ppv)
+                                metricsDict['f1'].append(f1)
+                        print('processed ' + f.name)
     
     sn_mean = np.average(np.array(metricsDict['sn']))
     ppv_mean = np.average(np.array(metricsDict['ppv']))
