@@ -317,7 +317,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
     segment_widths.append(widths_s[int(len(widths_s)/3):int(len(widths_s) * 2/3)])
     segment_widths.append(widths_s[int(len(widths_s) * 2/3):])
 
-    segment_offsets = [0,  int(len(widths)/3), int(len(widths * 2/3))]
+    segment_offsets = [0,  int(len(widths)/3), int(len(widths) * 2/3)]
   else:
     segment_widths.append(widths_s[:int(len(widths)/2)])
     segment_widths.append(widths_s[int(len(widths)/2):])
@@ -374,7 +374,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   return score, percentages, boxList
 
-# score, percentages = getScore('1367_35_lad', folderDirectory='A:/segmented/', show=True, save=False)
+# score, percentages, bboxList = getScore('1367_35_lad', folderDirectory='A:/segmented_otsu/', show=True, save=False)
 # print(score)
 # print(percentages)
 
