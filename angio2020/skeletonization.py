@@ -121,6 +121,8 @@ def determineStenosisLocation(peak_position, artery_type, artery_length):
       # distal
       return 0
 
+  
+
 def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsList, img):
   # widths array records widths from proximal to distal
   # factors are arranged from proximal to distal

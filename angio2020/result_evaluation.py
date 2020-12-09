@@ -5,16 +5,33 @@ import math
 from skeletonization import getScore
 import os
 
+def bin(percentages):
+    data = np.random.random(100)
+    bins = np.linspace(0, 1, 10)
+    digitized = np.digitize(data, bins)
+    counts = np.bincount(digitized)
+    maxBin = np.argmax(counts)
+    if isinstance(maxBin, numpy.ndarray):
+        maxBin = np.amax(maxBin)
+        binnedAverage = data[digitized == maxBin].mean()
+    else:
+        binnedAverage = data[digitized == maxBin].mean()
+    return binnedAverage
+
+
 # compute average given a dictionary of arrays containing percentages or percentage error
-def averagePerSegment(percDict):
+def qthPercentilePerSegment(percDict, q):
     for segment, percentages in percDict.items():
         sumPercentage = 0
         average = None
+        qthPerc = None
+        binnedAverage = None
         if len(percentages) > 0:
-            for percentage in percentages:
-                sumPercentage += percentage
-            average = sumPercentage / len(percentages) 
-        percDict[segment] = average
+            average = np.average(np.array(percentages))
+            # average = sumPercentage / len(percentages) 
+            qthPerc = np.percentile(np.array(percentages), q)
+            binnedAverage = bin(percentages)
+        percDict[segment] = binnedAverage
 
 def calculateErrors(predDict, gtDict, errorsDict):
     for segment, percentage in predDict.items():
@@ -114,8 +131,9 @@ if __name__ == "__main__":
                                 segmentName = artery
                             if segmentName in valid_segments:
                                 stenosisPercentages[segmentName].append(score)
+
         
-        averagePerSegment(stenosisPercentages)
+        qthPercentilePerSegment(stenosisPercentages, 50)
         print(f'{video.name}: raw percentages', stenosisPercentages)
         calculateErrors(stenosisPercentages, gtPercentages, errors)
 
