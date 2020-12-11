@@ -108,11 +108,17 @@ if __name__ == "__main__":
                         default='A:/segmented',
                         metavar="/path/to/segmented masks",
                         help="Path to folder containing images and their segmentation maps (default: A:/segmented)")
+    parser.add_argument('--json_folder', required=False,
+                    default='A:/bbox_json/',
+                    metavar="/path/to/jsons",
+                    help="Path to folder containing json files for each image with bounding box info (default: A:/bbox_json)")
 
 
     args = parser.parse_args()
     pathString = args.segmented_path
     path = Path(pathString)
+    jsonFolder = args.json_folder
+    
 
     metricsDict = {
         'sn': None,
@@ -120,7 +126,19 @@ if __name__ == "__main__":
         'f1': None
     }
 
-    results = {
+    results_3 = {
+        'fp': 0,
+        'fn': 0,
+        'tp': 0
+    }
+
+    results_5 = {
+        'fp': 0,
+        'fn': 0,
+        'tp': 0
+    }
+
+    results_7 = {
         'fp': 0,
         'fn': 0,
         'tp': 0
@@ -132,15 +150,23 @@ if __name__ == "__main__":
                 if '_bin_mask' in f.name:
                     artery = f.name.split('_')[-3]
                     filename = keyframe.name + '_' + artery
-                    jsonPath = f"{pathString.split('/')[0]}/bbox_json/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json"
+                    jsonPath = f"{jsonFolder}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json"
                     if os.path.exists(jsonPath):
                         _, scores, boxes = getScore(filename, folderDirectory=pathString, show=False, save=True)
                         print(boxes)
                         if boxes != None:
-                            processBbox(f"{pathString.split('/')[0]}/bbox_json/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json", boxes, artery, results, iouThresh=0.35)
+                            processBbox(f"{jsonFolder}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json", boxes, artery, results_3, iouThresh=0.35)
+                            processBbox(f"{jsonFolder}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json", boxes, artery, results_5, iouThresh=0.50)
+                            processBbox(f"{jsonFolder}/{filename.split('.')[0].split('_')[0]}_{filename.split('.')[0].split('_')[1]}.json", boxes, artery, results_7, iouThresh=0.75)
+                            print(results_3, results_5, results_7)
                         print('processed ' + f.name)
     
-    print(results)
-    sn, ppv, f1 = getMetrics(results)
-    print(f'Mean Sensitivity: {sn}, Mean Positive Predictive Rate: {ppv}, Mean F1 Score: {f1}')
+    sn, ppv, f1 = getMetrics(results_3)
+    print(f'@IoU 0.35: \nMean Sensitivity: {sn}, Mean Positive Predictive Rate: {ppv}, Mean F1 Score: {f1}')
+
+    sn, ppv, f1 = getMetrics(results_5)
+    print(f'@IoU 0.50: \nMean Sensitivity: {sn}, Mean Positive Predictive Rate: {ppv}, Mean F1 Score: {f1}')
+
+    sn, ppv, f1 = getMetrics(results_7)
+    print(f'@IoU 0.75: \nMean Sensitivity: {sn}, Mean Positive Predictive Rate: {ppv}, Mean F1 Score: {f1}')
 
