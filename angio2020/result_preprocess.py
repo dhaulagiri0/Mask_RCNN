@@ -30,7 +30,7 @@ def upContrast(img):
     l, a, b = cv2.split(lab)
 
     # Applying CLAHE to L-channel
-    clahe = cv2.createCLAHE(clipLimit=12.0, tileGridSize=(3,3))
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
     cl = clahe.apply(l)
 
     # Merge the CLAHE enhanced L-channel with the a and b channel
@@ -90,7 +90,7 @@ def applyFrangi(originalImage):
     filtered = img_as_ubyte(filtered)
     return filtered
 
-def makeSegmentations(data_path, subset, save_path, mode='otsu'):
+def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombined=False):
     p = Path(data_path)
     # navigates the items found in data folder
     for item in p.iterdir():
@@ -99,6 +99,7 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu'):
             # image_id is the folder name
             image_id = item.name
             # iterate through all the masks
+            combined_image = np.zeros(shape=(512, 512))
             for f in item.iterdir():
                 # get binary mask
                 # binMask = np.expand_dims(toBinMask(path=str(f)), -1)
@@ -123,10 +124,7 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu'):
                     originalImage = cv2.imread(data_path + image_id + '.jpeg')
                 upCon = upContrast(originalImage.copy())
                 upCon = cv2.cvtColor(upCon, cv2.COLOR_BGR2GRAY)
-                #################### temp
-                # imageio.imwrite('F:/contrasted/' + image_id + '.png', upCon)
-                # break
-                ####################
+                # imageio.imwrite(f'A:/contrasted/{image_id}.png', upCon)
                 if mode == 'frangi':
                     upCon = applyFrangi(upCon)
 
@@ -183,6 +181,7 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu'):
                         segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
 
                     segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
+                    combined_image = np.maximum(segmented_binary, combined_image)
 
                 # save
                 imageio.imwrite(filePrefix + '_bin_mask.png', binMask)
@@ -192,6 +191,12 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu'):
                 if mode != 'frangi':
                     imageio.imwrite(filePrefix + '_segmented_threshold.png', segmented_thresh)
                 imageio.imwrite(f"{save_path}/{image_id.split('_')[0]}/{image_id}/{image_id}" + '_original.png', originalImage)
+                if generateCombined:
+                    if not os.path.exists(f"{save_path}/combined/"):
+                        os.mkdir(f"{save_path}/combined/")
+                    if not os.path.exists(f"{save_path}/combined/{image_id.split('_')[0]}"):
+                        os.mkdir(f"{save_path}/combined/{image_id.split('_')[0]}")
+                    imageio.imwrite(f"{save_path}/combined/{image_id.split('_')[0]}/{image_id}" + '.png', combined_image)
                 # print(f.name.split('.')[0] + ' area percentage: ' + str(percentage))
                 print(f'processed: {f.name}')
 
@@ -222,5 +227,5 @@ if __name__ == "__main__":
     subset = subsetPath.split('/')[-1]
     mode = args.mode
 
-    makeSegmentations(subsetPath, subset, destPath, mode=mode)
+    makeSegmentations(subsetPath, subset, destPath, mode=mode, generateCombined=False)
 
