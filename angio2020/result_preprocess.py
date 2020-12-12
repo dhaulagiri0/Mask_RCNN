@@ -123,6 +123,10 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu'):
                     originalImage = cv2.imread(data_path + image_id + '.jpeg')
                 upCon = upContrast(originalImage.copy())
                 upCon = cv2.cvtColor(upCon, cv2.COLOR_BGR2GRAY)
+                #################### temp
+                # imageio.imwrite('F:/contrasted/' + image_id + '.png', upCon)
+                # break
+                ####################
                 if mode == 'frangi':
                     upCon = applyFrangi(upCon)
 
