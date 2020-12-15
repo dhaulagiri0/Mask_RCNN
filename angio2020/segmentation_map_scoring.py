@@ -42,6 +42,8 @@ def scoring(pathString):
     path = Path(pathString)
     scores = []
     accuracies = []
+    sensitivities = []
+    ppvs = []
     # check through segmentation map directory
     for video in path.iterdir():
         print(video.name)
@@ -64,12 +66,18 @@ def scoring(pathString):
                             values, f1 = f1Score(y_true, y_pred)
                             tn, fp, fn, tp = values
                             accuracy = (tp + tn) / (tp + tn + fp + fn)
+                            sensitivity = tp / (tp + fn)
+                            ppv = tp / (tp + fp)
                             accuracies.append(accuracy)
                             scores.append(f1)
+                            sensitivities.append(sensitivity)
+                            ppvs.append(ppv)
 
     f1Mean = np.average(np.array(scores))
     accuracyMean = np.average(np.array(accuracies))
-    return f1Mean, accuracyMean
+    snMean = np.average(np.array(sensitivities))
+    ppvMean = np.average(np.array(ppvs))
+    return f1Mean, accuracyMean, snMean, ppvMean
                         
 
 if __name__ == "__main__":
@@ -86,9 +94,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     data_path = args.data_path
 
-    f1Mean, accuracyMean = scoring(data_path)
+    f1Mean, accuracyMean, snMean, ppvMean = scoring(data_path)
     print('mean f1 score: ', f1Mean)
     print('mean accuracy: ', accuracyMean)
+    print('mean sn: ', snMean)
+    print('mean ppv: ', ppvMean)
 
 
 # gt = cv2.imread('A:/segmented/1367/1367_35/1367_35_diagonalbin_mask.png', 0)

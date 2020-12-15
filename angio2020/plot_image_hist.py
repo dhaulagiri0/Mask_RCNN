@@ -40,15 +40,37 @@ def otsu(image, is_normalized=True, is_reduce_noise=False):
 
     threshold = bin_mids[:-1][index_of_max_val]
     return threshold
+
+def upContrast(img):
+    lab= cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+
+    # Splitting the LAB image to different channels
+    l, a, b = cv2.split(lab)
+
+    # Applying CLAHE to L-channel
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+    cl = clahe.apply(l)
+
+    # Merge the CLAHE enhanced L-channel with the a and b channel
+    limg = cv2.merge((cl,a,b))
+
+    # Converting image from LAB Color model to RGB model
+    lab = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+    return lab
   
 # reads an input image 
-img = cv2.imread('A:/val/2876_45.jpeg',0) 
+img = cv2.imread('A:/test/1578_035.jpeg')
+img = upContrast(img) 
+
+cv2.imwrite('E:/Documents/angio_plots/clahed_img_3.png', img)
+
+img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
   
 # find frequency of pixels in range 0-255 
 histr = cv2.calcHist([img],[0],None,[256],[0,256]) 
 otsuThresh = int(otsu(img))
   
-plt.axvline(x=otsuThresh, color='r')
+# plt.axvline(x=otsuThresh, color='r')
 
 # show the plotting graph of an image 
 plt.plot(histr) 
