@@ -148,7 +148,7 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
                     # Otsu Thresholding
                     # get only non-zero pixel values to select otsu threshold
                     nonzero = np.array(segmented[segmented > 0])
-                    otsu_thresh = otsu(upCon, is_reduce_noise=True)
+                    otsu_thresh = otsu(nonzero, is_reduce_noise=True)
 
                     # threshold segmented image by otsu value
                     ret, segmented_thresh = cv2.threshold(segmented , otsu_thresh, 0, cv2.THRESH_TOZERO_INV)
@@ -173,12 +173,12 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
                     # morphology opening and closing
                     segmented_binary = cv2.resize(segmented_binary, (segmented_binary.shape[0]*2, segmented_binary.shape[1]*2), interpolation=cv2.INTER_AREA)
                     if mode == 'hess':
-                        kernel = np.ones((4,4),np.uint8)
+                        kernel = np.ones((3,3),np.uint8)
                         segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
                     else:
                         kernel = np.ones((2,2),np.uint8)
-                        segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=4)
                         segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
+                        # segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=1)
 
                     segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
                     combined_image = np.maximum(segmented_binary, combined_image)
