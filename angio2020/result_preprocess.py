@@ -95,11 +95,11 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
     # navigates the items found in data folder
     for item in p.iterdir():
         # if item is a folder containing masks
-        if item.is_dir():
+        if item.is_dir() and 'png' not in item.name:
             # image_id is the folder name
             image_id = item.name
             # iterate through all the masks
-            combined_image = np.zeros(shape=(512, 512))
+            # combined_image = np.zeros(shape=(512, 512))
             for f in item.iterdir():
                 # get binary mask
                 # binMask = np.expand_dims(toBinMask(path=str(f)), -1)
@@ -122,9 +122,11 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
                     originalImage = cv2.imread(data_path + image_id + '.jpeg')
                 else:
                     originalImage = cv2.imread(data_path + image_id + '.jpeg')
+                print(data_path + image_id + '.jpeg')
                 upCon = upContrast(originalImage.copy())
                 upCon = cv2.cvtColor(upCon, cv2.COLOR_BGR2GRAY)
-                # imageio.imwrite(f'A:/contrasted/{image_id}.png', upCon)
+                imageio.imwrite(f"A:/contrasted_val/{image_id}.png", upCon)
+                break
                 if mode == 'frangi':
                     upCon = applyFrangi(upCon)
 

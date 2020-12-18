@@ -187,6 +187,11 @@ if __name__ == '__main__':
                         metavar="<eval_data>",
                         help="which set of data to evaluate model on 'val' or 'train' or 'test' (default=val)"
                         )
+    parser.add_argument('--inference_save_path', required=False,
+                        default='C:/Users/damo/OneDrive/Documents/mrcnn_inferences',
+                        metavar="/path/to/inference/save",
+                        help="path to save inference images"
+                        )
 
     args = parser.parse_args()
     print("Command: ", args.command)
@@ -198,6 +203,7 @@ if __name__ == '__main__':
     mode = args.command
     datasetdir = args.dataset
     eval_data = args.eval_data
+    inference_save_path = args.inference_save_path
 
     if mode == 'train':
         config = AngioConfig()
@@ -268,7 +274,7 @@ if __name__ == '__main__':
                 # Visualize results
                 r = results[0]
                 visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], 
-                                            class_names, r['scores'], title=name.split('.')[0])
+                                            class_names, r['scores'], title=name.split('.')[0], path=inference_save_path)
         
         # print(mean / cnt)
                                             
@@ -319,7 +325,7 @@ if __name__ == '__main__':
         # Finetune layers from ResNet stage 4 and up
         print("Fine tune 4+")
         model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE,
+                    learning_rate=config.LEARNING_RATE/2,
                     epochs=120,
                     layers='4+',
                     augmentation=augmentation)

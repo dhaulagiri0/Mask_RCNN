@@ -104,9 +104,9 @@ def createJsonAnnotations(data_path, subset):
 
 
 
-createJsonAnnotations('D:/train', 'train')
-createJsonAnnotations('D:/val', 'val')
-createJsonAnnotations('D:/test', 'test')
+createJsonAnnotations('C:/Users/damo/OneDrive/Documents/angio_dataset_contrasted/train', 'train')
+createJsonAnnotations('C:/Users/damo/OneDrive/Documents/angio_dataset_contrasted/val', 'val')
+createJsonAnnotations('C:/Users/damo/OneDrive/Documents/angio_dataset_contrasted/test', 'test')
 
 # rle = jpgToBinMaskRle(image_path)
 # print(rle)
