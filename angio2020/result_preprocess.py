@@ -125,8 +125,8 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
                 print(data_path + image_id + '.jpeg')
                 upCon = upContrast(originalImage.copy())
                 upCon = cv2.cvtColor(upCon, cv2.COLOR_BGR2GRAY)
-                imageio.imwrite(f"A:/contrasted_val/{image_id}.png", upCon)
-                break
+                # imageio.imwrite(f"A:/contrasted_val/{image_id}.png", upCon)
+                # break
                 if mode == 'frangi':
                     upCon = applyFrangi(upCon)
 
@@ -141,7 +141,10 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
                 occ = (segmented > 0).sum()
 
                 # mean pixel value
-                meanPx = sumPx / occ
+                if occ > 0:
+                    meanPx = sumPx / occ
+                else:
+                    meanPx = 0
 
 
                 if mode == 'hess':
@@ -150,6 +153,8 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
                     # Otsu Thresholding
                     # get only non-zero pixel values to select otsu threshold
                     nonzero = np.array(segmented[segmented > 0])
+                    if len(nonzero) == 0:
+                        continue
                     otsu_thresh = otsu(nonzero, is_reduce_noise=True)
 
                     # threshold segmented image by otsu value
@@ -183,7 +188,7 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
                         # segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=1)
 
                     segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
-                    combined_image = np.maximum(segmented_binary, combined_image)
+                    # combined_image = np.maximum(segmented_binary, combined_image)
 
                 # save
                 imageio.imwrite(filePrefix + '_bin_mask.png', binMask)

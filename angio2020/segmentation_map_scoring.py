@@ -58,20 +58,27 @@ def scoring(pathString):
                     # TODO get segmentation map from coco format json file
                     jsonPath = f"{pathString.split('/')[0]}/poly_json/{keyframe.name}.json"
 
+                    y_true = None
                     if Path.exists(Path(jsonPath)):
                         points_dict = processMaskJson(jsonPath, artery)
                         if len(points_dict) > 0:
                             print('-- ', image.name)
                             y_true = np.int32(getPolyImage(points_dict))
-                            values, f1 = f1Score(y_true, y_pred)
-                            tn, fp, fn, tp = values
-                            accuracy = (tp + tn) / (tp + tn + fp + fn)
-                            sensitivity = tp / (tp + fn)
-                            ppv = tp / (tp + fp)
-                            accuracies.append(accuracy)
-                            scores.append(f1)
-                            sensitivities.append(sensitivity)
-                            ppvs.append(ppv)
+                    # else:
+                    #     print('-- ', image.name)
+                    #     imagePath = f'A:/segmented_otsu/{keyframe.name.split("_")[0]}/{keyframe.name}/{keyframe.name}_{artery}_bin_mask.png'
+                    #     y_true = cv2.imread(imagePath, 0)
+
+                    if  not (y_true is None):
+                        values, f1 = f1Score(y_true, y_pred)
+                        tn, fp, fn, tp = values
+                        accuracy = (tp + tn) / (tp + tn + fp + fn)
+                        sensitivity = tp / (tp + fn)
+                        ppv = tp / (tp + fp)
+                        accuracies.append(accuracy)
+                        scores.append(f1)
+                        sensitivities.append(sensitivity)
+                        ppvs.append(ppv)
 
     f1Mean = np.average(np.array(scores))
     accuracyMean = np.average(np.array(accuracies))

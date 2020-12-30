@@ -2844,7 +2844,7 @@ def mold_image(images, config):
     colors in RGB order.
     """
     image = images.astype(np.float32) - config.MEAN_PIXEL
-    image /= 255
+    # image /= 255
     return image
 
 

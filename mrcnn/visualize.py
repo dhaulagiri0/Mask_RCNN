@@ -12,6 +12,7 @@ import sys
 import random
 import itertools
 import colorsys
+import cv2
 
 import numpy as np
 from skimage.measure import find_contours
@@ -303,7 +304,6 @@ def display_top_masks(image, mask, class_ids, class_names, limit=4):
         titles.append(class_names[class_id] if class_id != -1 else "-")
     display_images(to_display, titles=titles, cols=limit + 1, cmap="Blues_r")
 
-
 def plot_precision_recall(AP, precisions, recalls):
     """Draw the precision-recall curve.
 
@@ -500,3 +500,38 @@ def display_weight_stats(model):
                 "{:+9.4f}".format(w.std()),
             ])
     display_table(table)
+
+def save_masks(image, boxes, masks, class_ids, class_names, scores = None, path='A:/inferences/', image_id=None):
+    """
+    boxes: [num_instance, (y1, x1, y2, x2, class_id)] in image coordinates.
+    masks: [height, width, num_instances]
+    class_ids: [num_instances]
+    class_names: list of class names of the dataset
+    scores: (optional) confidence scores for each box
+    title: (optional) Figure title
+    show_mask, show_bbox: To show masks and bounding boxes or not
+    figsize: (optional) the size of the image
+    colors: (optional) An array or colors to use with each object
+    captions: (optional) A list of strings to use as captions for each object
+    """
+    # Number of instances
+    N = boxes.shape[0]
+    if not N:
+        print("\n*** No instances to save *** \n")
+    else:
+        assert boxes.shape[0] == masks.shape[-1] == class_ids.shape[0]
+
+    img_dim = image.shape
+    for i in range(N):
+        class_id = class_ids[i]
+        label = class_names[class_id]
+
+        # Mask
+        mask = np.array(masks[:, :, i], dtype=int)
+        # if not os.path.exists(f'{path}/{image_id.split("_")[0]}'):
+        #     os.mkdir(f'{path}/{image_id.split("_")[0]}')
+        if not os.path.exists(f'{path}/{image_id}/'):
+            os.mkdir(f'{path}/{image_id}')
+        cv2.imwrite(f'{path}/{image_id}/{image_id}_{label}.png', mask*255)
+
+        # cv2.imshow(image_id + '_' + label, mask); cv2.waitkey(0)
