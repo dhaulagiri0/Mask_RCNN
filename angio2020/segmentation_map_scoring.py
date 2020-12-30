@@ -29,13 +29,14 @@ def processMaskJson(jsonPath, artery):
                 points_dict = region['points']
     return points_dict
 
-def getPolyImage(points_dict, shape=(512, 512)):
+def getPolyImage(points_dict, shape=(512, 512), fileName = '_'):
     points = []
     for point in points_dict:
         points.append([point['x'], point['y']])
     points = np.array(points).reshape((-1,1,2))
     blankImage = np.zeros(shape=shape)
     cv2.fillPoly(blankImage, np.int32([points]), (255))
+    cv2.imwrite(f'A:/ground_truths/{fileName}.png' ,blankImage)
     return blankImage
 
 def scoring(pathString):
@@ -63,7 +64,7 @@ def scoring(pathString):
                         points_dict = processMaskJson(jsonPath, artery)
                         if len(points_dict) > 0:
                             print('-- ', image.name)
-                            y_true = np.int32(getPolyImage(points_dict))
+                            y_true = np.int32(getPolyImage(points_dict, fileName=keyframe.name + '_' + artery))
                     # else:
                     #     print('-- ', image.name)
                     #     imagePath = f'A:/segmented_otsu/{keyframe.name.split("_")[0]}/{keyframe.name}/{keyframe.name}_{artery}_bin_mask.png'

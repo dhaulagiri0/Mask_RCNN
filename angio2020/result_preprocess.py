@@ -236,3 +236,20 @@ if __name__ == "__main__":
 
     makeSegmentations(subsetPath, subset, destPath, mode=mode, generateCombined=False)
 
+"""
+results for test_frangi
+@IoU 0.35:
+Mean Sensitivity: 0.053691275167785234, Mean Positive Predictive Rate: 0.14285714285714285, Mean F1 Score: 0.07804878048780488
+@IoU 0.50:
+Mean Sensitivity: 0.020134228187919462, Mean Positive Predictive Rate: 0.05357142857142857, Mean F1 Score: 0.02926829268292683
+@IoU 0.75:
+Mean Sensitivity: 0.0, Mean Positive Predictive Rate: 0.0, Mean F1 Score: 0.0
+
+results for test_otsu
+@IoU 0.35:
+Mean Sensitivity: 0.16321243523316062, Mean Positive Predictive Rate: 0.2669491525423729, Mean F1 Score: 0.20257234726688103
+@IoU 0.50:
+Mean Sensitivity: 0.09326424870466321, Mean Positive Predictive Rate: 0.15254237288135594, Mean F1 Score: 0.1157556270096463
+@IoU 0.75:
+Mean Sensitivity: 0.012953367875647668, Mean Positive Predictive Rate: 0.0211864406779661, Mean F1 Score: 0.01607717041800643
+"""
