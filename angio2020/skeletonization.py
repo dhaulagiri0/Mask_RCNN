@@ -133,7 +133,7 @@ def getBoxCoords(centerCoord, length):
     'y2' : int(y2)
   }
 
-def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsList, img):
+def scoring(widths, average_width, average_width_n, peaks, artery_type, stenosis_lengths, coordsList, img):
   # widths array records widths from proximal to distal
   # factors are arranged from proximal to distal
   # lcx1 is interpreted as the marginal artery
@@ -189,16 +189,19 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsL
     if lowerBound < 0: lowerBound = 0
     if upperBound < 0: upperBound = 0
 
-    localWidth = (widths[upperBound] + widths[lowerBound]) / 2.
+    dLeft = widths[upperBound] 
+    dRight = widths[lowerBound]
 
-    # sanity check width values
-    if round(width, 2) <= 0: width = 0
-    if localWidth < 0.5 * average_width: localWidth = average_width
+    percentage = (1-(2*width/(dLeft + dRight))**2) * 100
 
-    if width <= average_width:
-      percentage = (1. - float(width / average_width)) * 100.
-    else:
-      percentage = 0
+    # # sanity check width values
+    # if round(width, 2) <= 0: width = 0
+    # if localWidth < 0.5 * average_width_n: localWidth = average_width_n
+
+    # if width <= average_width_n:
+    #   percentage = (1. - float(width / average_width_n)) * 100.
+    # else:
+    #   percentage = 0
 
     if percentage < 0:
       percentage = 0
@@ -217,15 +220,15 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsL
       score += factor * 5 + 1
       c = (255, 0, 0)
       boxList.append(boxCoords)
-    elif width < 0.5 * localWidth:
+    elif percentage >= 50:
       # significant lesion
       score += factor * 2
       c = (255, 0, 0)
       boxList.append(boxCoords)
-    elif width < 0.7 * localWidth:
+    elif percentage >= 30:
       c = (128, 0, 128)
       # boxList.append(boxCoords)
-    elif width < 0.8 * localWidth:
+    elif percentage >= 20:
       c = (255, 255, 0)
       # boxList.append(boxCoords)
     else:
@@ -262,7 +265,6 @@ def traverseSkeleton(start, end, graph, coords):
     curCoord = coords[curIndex - 1]
   coordsOrdered.append(end)
   return np.asarray(coordsOrdered)
-
 
 def skeletoniseSkimg(maskFilePath):
   image = io.imread(maskFilePath)
@@ -311,24 +313,28 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
   if len(widths) > window_size:
     # smoothing width graph
     widths_s = savgol_filter(widths, window_size, 2)
-    widths_trend = savgol_filter(widths, len(widths), 3)
+    if len(widths) % 2 == 0:
+      size = len(widths) - 1
+    else:
+      size = len(widths)
+    widths_trend = savgol_filter(widths, size, 3)
     widths_norm = widths_s - widths_trend
   else:
     return None, None, None
 
-  average_width = np.average(widths_norm) 
+  average_width = np.average(widths) 
+  average_width_n = np.average(widths_norm) 
 
   # locate dips in widths and identify them as regions of stenosis
   peaks, _ = find_peaks(np.negative(widths_norm), distance=5, prominence=(average_width*0.4, None))
-  peaks_p, _ = find_peaks(widths_norm, distance=5, prominence=(average_width*0.4, None))
 
   # determine length of each detected stenosis
-  stenosis_lengths_ = peak_widths(np.negative(widths_norm), peaks, rel_height=0.7)
+  stenosis_lengths_ = peak_widths(np.negative(widths_norm), peaks, rel_height=0.8)
   stenosis_lengths = stenosis_lengths_[0]
 
   # get syntax score and highest stenosis percentages for each segment of the artery if any
   # box coords are collated to calculate f1 score later
-  score, percentages, boxList = scoring(widths_norm, average_width, peaks, filename.split('_')[-1], stenosis_lengths, coordsList, imDisplay)
+  score, percentages, boxList = scoring(widths_s, average_width, average_width_n, peaks, filename.split('_')[-1], stenosis_lengths, coordsList, imDisplay)
 
   # plotting for display purposes
   plt.cla()
@@ -340,7 +346,7 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
   # draw lines representing the length of stenosis
   # diabled becaue it causes the graph to be compressed 
   # (the lines are always negative due to the way it is generated)
-  #plt.hlines(*stenosis_lengths_[1:], color="C2")
+  # plt.hlines(*stenosis_lengths_[1:], color="C2")
 
   # displays plot and stenosis locations
   # if activated at the same time as save, plots go blank
