@@ -310,27 +310,32 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
   # sanity check in case there are multiple skeletons
   if len(widths) > window_size:
     # smoothing width graph
-    widths_s = savgol_filter(widths, window_size, 3)
+    widths_s = savgol_filter(widths, window_size, 2)
+    widths_trend = savgol_filter(widths, len(widths), 3)
+    widths_norm = widths_s - widths_trend
   else:
     return None, None, None
 
-  average_width = np.average(widths) 
+  average_width = np.average(widths_norm) 
 
   # locate dips in widths and identify them as regions of stenosis
-  peaks, _ = find_peaks(np.negative(widths_s), distance=5, prominence=(average_width*0.4, None))
+  peaks, _ = find_peaks(np.negative(widths_norm), distance=5, prominence=(average_width*0.4, None))
+  peaks_p, _ = find_peaks(widths_norm, distance=5, prominence=(average_width*0.4, None))
 
   # determine length of each detected stenosis
-  stenosis_lengths_ = peak_widths(np.negative(widths_s), peaks, rel_height=0.7)
+  stenosis_lengths_ = peak_widths(np.negative(widths_norm), peaks, rel_height=0.7)
   stenosis_lengths = stenosis_lengths_[0]
 
   # get syntax score and highest stenosis percentages for each segment of the artery if any
   # box coords are collated to calculate f1 score later
-  score, percentages, boxList = scoring(widths_s, average_width, peaks, filename.split('_')[-1], stenosis_lengths, coordsList, imDisplay)
+  score, percentages, boxList = scoring(widths_norm, average_width, peaks, filename.split('_')[-1], stenosis_lengths, coordsList, imDisplay)
 
   # plotting for display purposes
   plt.cla()
   plt.plot(range(1, len(widths_s) + 1), widths_s)
-  plt.plot(peaks, widths_s[peaks], "x")
+  plt.plot(range(1, len(widths_trend) + 1), widths_trend)
+  plt.plot(range(1, len(widths_norm) + 1), widths_norm)
+  plt.plot(peaks, widths_norm[peaks], "x")
   
   # draw lines representing the length of stenosis
   # diabled becaue it causes the graph to be compressed 
@@ -354,9 +359,9 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   return score, percentages, boxList
 
-# score, percentages, bboxList = getScore('3005_34_lcx2', folderDirectory='F:/segmented_otsu/', show=True, save=False)
-# print(score)
-# print(percentages)
+score, percentages, bboxList = getScore('1367_43_lad', folderDirectory='A:/segmented_otsu/', show=True, save=False)
+print(score)
+print(percentages)
 
 # legacy code
 # if __name__ == "__main__":
