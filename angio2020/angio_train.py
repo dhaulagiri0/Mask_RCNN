@@ -128,7 +128,7 @@ class AngioConfig(Config):
 
     IMAGE_CHANNEL_COUNT = 1
 
-    MEAN_PIXEL = np.array([0])
+    MEAN_PIXEL = np.array([129.8])
 
     NUM_CLASSES = 1 + 5  # Background + rest
 
@@ -146,7 +146,7 @@ class AngioConfig(Config):
     RPN_ANCHOR_RATIOS = [0.5, 1, 2]
     MINI_MASK_SHAPE = (56, 56)
 
-    LEARNING_RATE = 0.001
+    LEARNING_RATE = 0.0001
 
 #Constants
 
@@ -187,6 +187,11 @@ if __name__ == '__main__':
                         metavar="<eval_data>",
                         help="which set of data to evaluate model on 'val' or 'train' or 'test' (default=val)"
                         )
+    parser.add_argument('--inference_save_path', required=False,
+                        default='C:/Users/damo/OneDrive/Documents/mrcnn_inferences',
+                        metavar="/path/to/inference/save",
+                        help="path to save inference images"
+                        )
 
     args = parser.parse_args()
     print("Command: ", args.command)
@@ -198,6 +203,7 @@ if __name__ == '__main__':
     mode = args.command
     datasetdir = args.dataset
     eval_data = args.eval_data
+    inference_save_path = args.inference_save_path
 
     if mode == 'train':
         config = AngioConfig()
@@ -267,8 +273,10 @@ if __name__ == '__main__':
                 results = model.detect([pred_image], verbose=1)
                 # Visualize results
                 r = results[0]
-                visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], 
-                                            class_names, r['scores'], title=name.split('.')[0])
+                # visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], 
+                #                             class_names, r['scores'], title=name.split('.')[0], path=inference_save_path)
+                visualize.save_masks(image, r['rois'], r['masks'], r['class_ids'], 
+                                            class_names, r['scores'], path=inference_save_path, image_id=name.split('.')[0])
         
         # print(mean / cnt)
                                             
@@ -319,14 +327,14 @@ if __name__ == '__main__':
         # Finetune layers from ResNet stage 4 and up
         print("Fine tune 4+")
         model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE,
+                    learning_rate=config.LEARNING_RATE/5,
                     epochs=120,
                     layers='4+',
                     augmentation=augmentation)
 
         print("Fine tune 3+")
         model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE / 1000,
+                    learning_rate=config.LEARNING_RATE / 10,
                     epochs=160,
                     layers='3+',
                     augmentation=augmentation)
@@ -335,7 +343,7 @@ if __name__ == '__main__':
         # Finetune all layers
         print("Fine tune all layers")
         model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE / 3000,
+                    learning_rate=config.LEARNING_RATE * 3 / 100,
                     epochs=200,
                     layers='all',
                     augmentation=augmentation)

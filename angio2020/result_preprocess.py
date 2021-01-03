@@ -95,11 +95,11 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
     # navigates the items found in data folder
     for item in p.iterdir():
         # if item is a folder containing masks
-        if item.is_dir():
+        if item.is_dir() and 'png' not in item.name:
             # image_id is the folder name
             image_id = item.name
             # iterate through all the masks
-            combined_image = np.zeros(shape=(512, 512))
+            # combined_image = np.zeros(shape=(512, 512))
             for f in item.iterdir():
                 # get binary mask
                 # binMask = np.expand_dims(toBinMask(path=str(f)), -1)
@@ -122,10 +122,11 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
                     originalImage = cv2.imread(data_path + image_id + '.jpeg')
                 else:
                     originalImage = cv2.imread(data_path + image_id + '.jpeg')
+                print(data_path + image_id + '.jpeg')
                 upCon = upContrast(originalImage.copy())
                 upCon = cv2.cvtColor(upCon, cv2.COLOR_BGR2GRAY)
-                # imageio.imwrite(f'A:/contrasted/{image_id}.png', upCon)
-
+                # imageio.imwrite(f"A:/contrasted_val/{image_id}.png", upCon)
+                # break
                 if mode == 'frangi':
                     upCon = applyFrangi(upCon)
 
@@ -140,7 +141,10 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
                 occ = (segmented > 0).sum()
 
                 # mean pixel value
-                meanPx = sumPx / occ
+                if occ > 0:
+                    meanPx = sumPx / occ
+                else:
+                    meanPx = 0
 
 
                 if mode == 'hess':
@@ -149,7 +153,9 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
                     # Otsu Thresholding
                     # get only non-zero pixel values to select otsu threshold
                     nonzero = np.array(segmented[segmented > 0])
-                    otsu_thresh = otsu(upCon, is_reduce_noise=True)
+                    if len(nonzero) == 0:
+                        continue
+                    otsu_thresh = otsu(nonzero, is_reduce_noise=True)
 
                     # threshold segmented image by otsu value
                     ret, segmented_thresh = cv2.threshold(segmented , otsu_thresh, 0, cv2.THRESH_TOZERO_INV)
@@ -174,15 +180,15 @@ def makeSegmentations(data_path, subset, save_path, mode='otsu', generateCombine
                     # morphology opening and closing
                     segmented_binary = cv2.resize(segmented_binary, (segmented_binary.shape[0]*2, segmented_binary.shape[1]*2), interpolation=cv2.INTER_AREA)
                     if mode == 'hess':
-                        kernel = np.ones((4,4),np.uint8)
+                        kernel = np.ones((3,3),np.uint8)
                         segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
                     else:
                         kernel = np.ones((2,2),np.uint8)
-                        segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=4)
                         segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_CLOSE, kernel, iterations=4)
+                        # segmented_binary = cv2.morphologyEx(segmented_binary, cv2.MORPH_OPEN, kernel, iterations=1)
 
                     segmented_binary = cv2.resize(segmented_binary, (int(segmented_binary.shape[0]*0.5), int(segmented_binary.shape[1]*0.5)), interpolation=cv2.INTER_AREA)
-                    combined_image = np.maximum(segmented_binary, combined_image)
+                    # combined_image = np.maximum(segmented_binary, combined_image)
 
                 # save
                 imageio.imwrite(filePrefix + '_bin_mask.png', binMask)
@@ -230,3 +236,20 @@ if __name__ == "__main__":
 
     makeSegmentations(subsetPath, subset, destPath, mode=mode, generateCombined=False)
 
+"""
+results for test_frangi
+@IoU 0.35:
+Mean Sensitivity: 0.053691275167785234, Mean Positive Predictive Rate: 0.14285714285714285, Mean F1 Score: 0.07804878048780488
+@IoU 0.50:
+Mean Sensitivity: 0.020134228187919462, Mean Positive Predictive Rate: 0.05357142857142857, Mean F1 Score: 0.02926829268292683
+@IoU 0.75:
+Mean Sensitivity: 0.0, Mean Positive Predictive Rate: 0.0, Mean F1 Score: 0.0
+
+results for test_otsu
+@IoU 0.35:
+Mean Sensitivity: 0.16321243523316062, Mean Positive Predictive Rate: 0.2669491525423729, Mean F1 Score: 0.20257234726688103
+@IoU 0.50:
+Mean Sensitivity: 0.09326424870466321, Mean Positive Predictive Rate: 0.15254237288135594, Mean F1 Score: 0.1157556270096463
+@IoU 0.75:
+Mean Sensitivity: 0.012953367875647668, Mean Positive Predictive Rate: 0.0211864406779661, Mean F1 Score: 0.01607717041800643
+"""

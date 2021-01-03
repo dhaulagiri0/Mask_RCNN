@@ -224,7 +224,7 @@ def scoring(widths, average_width, peaks, artery_type, stenosis_lengths, coordsL
       boxList.append(boxCoords)
     elif width < 0.7 * localWidth:
       c = (128, 0, 128)
-      boxList.append(boxCoords)
+      # boxList.append(boxCoords)
     elif width < 0.8 * localWidth:
       c = (255, 255, 0)
       # boxList.append(boxCoords)
@@ -359,9 +359,9 @@ def getScore(filename, folderDirectory='A:/segmented/', show=False, save=False):
 
   return score, percentages, boxList
 
-score, percentages, bboxList = getScore('1367_43_lad', folderDirectory='A:/segmented_otsu/', show=True, save=False)
-print(score)
-print(percentages)
+# score, percentages, bboxList = getScore('1494_054_lcx1', folderDirectory='A:/segmented_otsu/', show=True, save=False)
+# print(score)
+# print(percentages)
 
 # legacy code
 # if __name__ == "__main__":
